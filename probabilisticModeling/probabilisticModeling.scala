@@ -59,7 +59,7 @@ object probabilisticModeling {
         case (_,n)::rest => n + sumTotal(rest)
       }
     val total = 1.0*(sumTotal(inp))
-    weightedCases(inp map (t => t match { case (x,v) => (x,v/total) }))
+    weightedCases(inp map { case (x,v) => (x,v/total) })
   }
   
   sealed trait Outcome
