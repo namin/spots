@@ -65,10 +65,11 @@ let roulette = countedCases [ Even,18; Odd,18; Zero,1]
 // ----------------------------
 
 roulette.Sample
-
+// val it : Outcome = Odd
 roulette.Sample
-
+// val it : Outcome = Odd
 roulette.Expectation (function Even -> 10.0 | Odd -> 0.0 | Zero -> 0.0)
+// val it : float = 4.864864865
 
 // ----------------------------
 
@@ -93,17 +94,11 @@ let aggressiveDriver light =
            | Yellow -> return! weightedCases [ Stop, 0.1; Drive, 0.9 ]
            | Green  -> return Drive }
 
-let otherLightFun light =
+let otherLight light =
     match light with
     | Red -> Green
     | Yellow -> Red
     | Green -> Red
-
-let otherLightDFun light =
-    dist { match light with
-           | Red -> return! weightedCases [ Green, 0.8; Yellow, 0.2 ]
-           | Yellow -> return Red
-           | Green -> return Red }
     
 type CrashResult = Crash | NoCrash
 
@@ -113,12 +108,9 @@ let crash(driverOneD,driverTwoD,lightD) =
 
            // Sample the first driver's behavior given the traffic light
            let! driverOne = driverOneD light
-
-           // Sample from the second traffic light
-           let! otherLight = otherLightDFun light
            
            // Sample the second driver's behavior given the traffic light
-           let! driverTwo = driverTwoD otherLight
+           let! driverTwo = driverTwoD (otherLight light)
 
            // Work out the probability of a crash
            match driverOne, driverTwo with
@@ -132,11 +124,12 @@ let model2 = crash(aggressiveDriver,aggressiveDriver,trafficLightD)
 // ----------------------------
 
 model.Sample
-
+// val it : CrashResult = NoCrash
 model.Sample
-
+// val it : CrashResult = NoCrash
 model.Expectation(function Crash -> 1.0 | NoCrash -> 0.0)
-
+// val it : float = 0.0369
 model2.Expectation(function Crash -> 1.0 | NoCrash -> 0.0)
+// val it : float = 0.0891
 
 // ----------------------------
