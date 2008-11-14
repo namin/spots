@@ -18,24 +18,27 @@ object probabilisticModeling extends Application {
       def Expectation(H: A => Double) = H(x)
   }
   
-  def always[A](x: A) = new AlwaysDistribution(x)
+  def always[A](x: A) = new Distribution[A] {
+    def Sample() = x
+    def Support() = new Set1(x)
+    def Expectation(H: A => Double) = H(x)
+  }
   
   val rnd = new Random
   
-  
-  class CoinFlipDistribution[A](p: Double)(d1: Distribution[A])(d2: Distribution[A]) extends Distribution[A] {
+  def coinFlip[A](p: Double)(d1: Distribution[A])(d2: Distribution[A]) = {
     if (p < 0.0 || p > 1.0) error("invalid probability")
-    def Sample() = 
-      if (rnd.nextDouble() < p) d1.Sample() else d2.Sample() 
-    def Support() = 
-      d1.Support() ++ d2.Support()
-    def Expectation(H : A => Double) = 
-      p * d1.Expectation(H) + (1.0-p) * d2.Expectation(H)
+    new Distribution[A] {
+      def Sample() = 
+        if (rnd.nextDouble() < p) d1.Sample() else d2.Sample() 
+      def Support() = 
+        d1.Support() ++ d2.Support()
+      def Expectation(H : A => Double) = 
+        p * d1.Expectation(H) + (1.0-p) * d2.Expectation(H)
+    }
   }
-
-  def coinFlip[A](p: Double)(d1: Distribution[A])(d2: Distribution[A]) = new CoinFlipDistribution(p)(d1)(d2)
-  
-  class BindDistribution[A,B](dist: Distribution[A])(k: A => Distribution[B]) extends Distribution[B] {
+    
+  def bind[A,B](dist: Distribution[A])(k: A => Distribution[B]): Distribution[B] = new Distribution[B] {
     def Sample() =	
       (k(dist.Sample())).Sample()
     def Support() = 
@@ -43,8 +46,6 @@ object probabilisticModeling extends Application {
     def Expectation(H : B => Double) = 
       dist.Expectation(x => k(x).Expectation(H))
   }
-  
-  def bind[A,B](dist: Distribution[A])(k: A => Distribution[B]): Distribution[B] = new BindDistribution(dist)(k)
 
   def weightedCases[A](inp: List[(A,Double)]): Distribution[A] = {
     def coinFlips[A](w: Double)(l: List[(A,Double)]): Distribution[A] = {
