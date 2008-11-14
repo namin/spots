@@ -53,12 +53,7 @@ object probabilisticModeling {
   }
  
   def countedCases[A](inp: List[(A,Int)]): Distribution[A] = {
-    def sumTotal[A](inp: List[(A,Int)]): Int = 
-      inp match {
-        case Nil => 0
-        case (_,n)::rest => n + sumTotal(rest)
-      }
-    val total = 1.0*(sumTotal(inp))
+    val total = inp map { case (_,v) => v } reduceLeft (_+_)
     weightedCases(inp map { case (x,v) => (x,v/total) })
   }
   
