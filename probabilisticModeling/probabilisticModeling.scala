@@ -11,13 +11,7 @@ object probabilisticModeling extends Application {
     def map[B](k: A => B) = flatMap((x: A) => always(k(x)))
     def flatMap[B](k: A => Distribution[B]): Distribution[B] = bind(this)(k)
   }
-  
-  class AlwaysDistribution[A](x: A) extends Distribution[A] {
-      def Sample() = x
-      def Support() = new Set1(x)
-      def Expectation(H: A => Double) = H(x)
-  }
-  
+    
   def always[A](x: A) = new Distribution[A] {
     def Sample() = x
     def Support() = new Set1(x)
