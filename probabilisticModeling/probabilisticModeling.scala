@@ -160,9 +160,9 @@ object probabilisticModeling {
     // model sample: NoCrash()
     println("model2 sample: " + model2.Sample())
     // model2 sample: NoCrash()
-    println("model crash expectation:" + model.Expectation(H))
-    // model crash expectation:0.036899999999999995
-    println("model2 crash expectation:" + model2.Expectation(H))
-    // model2 crash expectation:0.0882
+    println("model crash expectation: " + model.Expectation(H))
+    // model crash expectation: 0.036899999999999995
+    println("model2 crash expectation: " + model2.Expectation(H))
+    // model2 crash expectation: 0.0882
   }
 }
