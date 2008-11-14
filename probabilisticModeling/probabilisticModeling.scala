@@ -1,6 +1,6 @@
 package probabilisticModeling
 
-object probabilisticModeling extends Application {
+object probabilisticModeling {
   import scala.collection.immutable.Set1
   import scala.util.Random
 
@@ -68,10 +68,7 @@ object probabilisticModeling extends Application {
   case class Zero() extends Outcome
   
   val roulette = countedCases(List((Even(),18),(Odd(),18),(Zero(),1)))
-  
-  println("roulette sample: " + roulette.Sample())
-  println("roulette sample: " + roulette.Sample())
-  
+    
   val roulettePayoff = 
     roulette.Expectation(x => x match {
       case Even() => 10.0
@@ -79,9 +76,7 @@ object probabilisticModeling extends Application {
       case Zero() => 0.0
     }
     )
-    
-  println("roulette payoff: " + roulettePayoff)
-
+  
   abstract class Light
   case class Red() extends Light
   case class Green() extends Light
@@ -148,16 +143,26 @@ object probabilisticModeling extends Application {
 
   val model = crash(cautiousDriver)(aggressiveDriver)(trafficLightD)    
   val model2 = crash(aggressiveDriver)(aggressiveDriver)(trafficLightD)
-  
-  println("model sample: " + model.Sample())
-  println("model2 sample: " + model2.Sample())
-  
+
   def H(x: CrashResult) = x match {
     case Crash() => 1.0
     case NoCrash() => 0.0
   }
-  
-  println("model crash expectation:" + model.Expectation(H))
-  println("model2 crash expectation:" + model2.Expectation(H))
 
+  def main(args: Array[String]) = {
+    println("roulette sample: " + roulette.Sample())
+    // roulette sample: Odd()
+    println("roulette sample (again): " + roulette.Sample())
+    // roulette sample (again): Even()
+    println("roulette payoff: " + roulettePayoff)
+    // roulette payoff: 4.864864864864865
+    println("model sample: " + model.Sample())
+    // model sample: NoCrash()
+    println("model2 sample: " + model2.Sample())
+    // model2 sample: NoCrash()
+    println("model crash expectation:" + model.Expectation(H))
+    // model crash expectation:0.036899999999999995
+    println("model2 crash expectation:" + model2.Expectation(H))
+    // model2 crash expectation:0.0882
+  }
 }
