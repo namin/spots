@@ -62,63 +62,63 @@ object probabilisticModeling {
     weightedCases(inp map (t => t match { case (x,v) => (x,v/total) }))
   }
   
-  abstract class Outcome
-  case class Even() extends Outcome
-  case class Odd() extends Outcome
-  case class Zero() extends Outcome
+  sealed trait Outcome
+  final case object Even extends Outcome
+  final case object Odd extends Outcome
+  final case object Zero extends Outcome
   
-  val roulette = countedCases(List((Even(),18),(Odd(),18),(Zero(),1)))
+  val roulette = countedCases(List((Even,18),(Odd,18),(Zero,1)))
     
   val roulettePayoff = 
     roulette.Expectation(x => x match {
-      case Even() => 10.0
-      case Odd() => 0.0
-      case Zero() => 0.0
+      case Even => 10.0
+      case Odd => 0.0
+      case Zero => 0.0
     }
     )
   
-  abstract class Light
-  case class Red() extends Light
-  case class Green() extends Light
-  case class Yellow() extends Light
+  sealed trait Light
+  final case object Red extends Light
+  final case object Green extends Light
+  final case object Yellow extends Light
 
-  def trafficLightD: Distribution[Light] = weightedCases(List((Red(),0.50),(Yellow(),0.10),(Green(),0.40)))
+  def trafficLightD: Distribution[Light] = weightedCases(List((Red,0.50),(Yellow,0.10),(Green,0.40)))
   
-  abstract class Action
-  case class Stop() extends Action
-  case class Drive() extends Action
+  sealed trait Action
+  final case object Stop extends Action
+  final case object Drive extends Action
   
   def cautiousDriver(light: Light): Distribution[Action] =
     light match {
-      case Red() => always(Stop())
-      case Yellow() => weightedCases(List((Stop(),0.9),(Drive(),0.1)))
-      case Green() => always(new Drive())
+      case Red => always(Stop)
+      case Yellow => weightedCases(List((Stop,0.9),(Drive,0.1)))
+      case Green => always(Drive)
     }
   
   def aggressiveDriver(light: Light): Distribution[Action] =
     light match {
-      case Red() => weightedCases(List((Stop(),0.9),(Drive(),0.1)))
-      case Yellow() => weightedCases(List((Stop(),0.1),(Drive(),0.9)))
-      case Green() => always(Drive())
+      case Red => weightedCases(List((Stop,0.9),(Drive,0.1)))
+      case Yellow => weightedCases(List((Stop,0.1),(Drive,0.9)))
+      case Green => always(Drive)
     }
   
   def otherLightFun(light: Light): Light =
     light match {
-      case Red() => Green()
-      case Yellow() => Red()
-      case Green() => Red()
+      case Red => Green
+      case Yellow => Red
+      case Green => Red
     }
   
   def otherLightDFun(light: Light): Distribution[Light] =
     light match {
-      case Red() => weightedCases(List((Green(),0.8),(Yellow(),0.2)))
-      case Yellow() => always(Red())
-      case Green() => always(Red())
+      case Red => weightedCases(List((Green,0.8),(Yellow,0.2)))
+      case Yellow => always(Red)
+      case Green => always(Red)
     }
   
-  abstract class CrashResult
-  case class Crash() extends CrashResult
-  case class NoCrash() extends CrashResult
+  sealed trait CrashResult
+  final case object Crash extends CrashResult
+  final case object NoCrash extends CrashResult
     
   def crashExplicit(driverOneD: Light => Distribution[Action])(driverTwoD: Light => Distribution[Action])(lightD: Distribution[Light]): Distribution[CrashResult] =
     lightD.flatMap(light =>
@@ -126,8 +126,8 @@ object probabilisticModeling {
         otherLightDFun(light).flatMap(otherLight =>
           driverTwoD(otherLight).flatMap(driverTwo =>
             (driverOne, driverTwo) match {
-              case (Drive(),Drive()) => weightedCases(List((Crash(),0.9),(NoCrash(),0.1)))
-              case _ => always(NoCrash())
+              case (Drive,Drive) => weightedCases(List((Crash,0.9),(NoCrash,0.1)))
+              case _ => always(NoCrash)
             }))))
   
   def crash(driverOneD: Light => Distribution[Action])(driverTwoD: Light => Distribution[Action])(lightD: Distribution[Light]): Distribution[CrashResult] =
@@ -135,31 +135,31 @@ object probabilisticModeling {
          driverOne <- driverOneD(light);
          otherLight <- otherLightDFun(light);
          driverTwo <- driverTwoD(otherLight);
-         caseBothDrive <- weightedCases(List((Crash(),0.9),(NoCrash(),0.1)))) yield
+         caseBothDrive <- weightedCases(List((Crash,0.9),(NoCrash,0.1)))) yield
     (driverOne,driverTwo) match {
-      case (Drive(),Drive()) => caseBothDrive
-      case _ => NoCrash()
+      case (Drive,Drive) => caseBothDrive
+      case _ => NoCrash
     }
 
   val model = crash(cautiousDriver)(aggressiveDriver)(trafficLightD)    
   val model2 = crash(aggressiveDriver)(aggressiveDriver)(trafficLightD)
 
   def H(x: CrashResult) = x match {
-    case Crash() => 1.0
-    case NoCrash() => 0.0
+    case Crash => 1.0
+    case NoCrash => 0.0
   }
 
   def main(args: Array[String]) = {
     println("roulette sample: " + roulette.Sample())
-    // roulette sample: Odd()
+    // roulette sample: Odd
     println("roulette sample (again): " + roulette.Sample())
-    // roulette sample (again): Even()
+    // roulette sample (again): Even
     println("roulette payoff: " + roulettePayoff)
     // roulette payoff: 4.864864864864865
     println("model sample: " + model.Sample())
-    // model sample: NoCrash()
+    // model sample: NoCrash
     println("model2 sample: " + model2.Sample())
-    // model2 sample: NoCrash()
+    // model2 sample: NoCrash
     println("model crash expectation: " + model.Expectation(H))
     // model crash expectation: 0.036899999999999995
     println("model2 crash expectation: " + model2.Expectation(H))
