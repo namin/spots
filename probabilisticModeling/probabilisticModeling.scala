@@ -72,12 +72,6 @@ object probabilisticModeling extends Application {
   case class Odd() extends Outcome
   case class Zero() extends Outcome
   
-  def prettyOutcome (outcome: Outcome) =
-    outcome match {
-      case Even() => "even"
-      case Odd() => "odd"
-      case Zero() => "zero"
-    }
   val roulette = countedCases(List((Even(),18),(Odd(),18),(Zero(),1)))
   
   println("roulette sample: " + roulette.Sample())
