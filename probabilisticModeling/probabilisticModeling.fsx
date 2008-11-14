@@ -22,7 +22,7 @@ let coinFlip (p:float) (d1:Distribution<'a>) (d2:Distribution<'a>) =
     { new Distribution<'a> with
          member d.Sample =
              if rnd.NextDouble() < p then d1.Sample else d2.Sample
-         member d.Support = Set.Union(d1.Support,d2.Support)
+         member d.Support = d1.Support + d2.Support
          member d.Expectation(H) =
              p * d1.Expectation(H) + (1.0-p) * d2.Expectation(H) }
 
@@ -32,7 +32,7 @@ let coinFlip (p:float) (d1:Distribution<'a>) (d2:Distribution<'a>) =
 let bind (dist:Distribution<'a>) (k: 'a -> Distribution<'b>) =
     { new Distribution<'b> with
          member d.Sample = (k(dist.Sample)).Sample
-         member d.Support = Set.Union(dist.Support.Map(fun d -> (k d).Support))
+         member d.Support = Set.union_all (dist.Support |> Set.map(fun d -> (k d).Support))
          member d.Expectation(H) = dist.Expectation(fun x -> (k x).Expectation(H)) }
 
 type DistributionBuilder() =
@@ -55,7 +55,7 @@ let weightedCases (inp: ('a * float) list) =
     coinFlips 0.0 inp
 
 let countedCases inp =
-    let total = List.sumByInt (fun (_,v) -> v) inp
+    let total = List.sum_by (fun (_,v) -> v) inp
     weightedCases (inp |> List.map (fun (x,v) -> (x,(float v/float total))))
 
 type Outcome = Even | Odd | Zero
