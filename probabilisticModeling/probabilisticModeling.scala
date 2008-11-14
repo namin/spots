@@ -102,20 +102,13 @@ object probabilisticModeling {
       case Green => always(Drive)
     }
   
-  def otherLightFun(light: Light): Light =
+  def otherLight(light: Light): Light =
     light match {
       case Red => Green
       case Yellow => Red
       case Green => Red
     }
-  
-  def otherLightDFun(light: Light): Distribution[Light] =
-    light match {
-      case Red => weightedCases(List((Green,0.8),(Yellow,0.2)))
-      case Yellow => always(Red)
-      case Green => always(Red)
-    }
-  
+    
   sealed trait CrashResult
   final case object Crash extends CrashResult
   final case object NoCrash extends CrashResult
@@ -123,18 +116,16 @@ object probabilisticModeling {
   def crashExplicit(driverOneD: Light => Distribution[Action])(driverTwoD: Light => Distribution[Action])(lightD: Distribution[Light]): Distribution[CrashResult] =
     lightD.flatMap(light =>
       driverOneD(light).flatMap(driverOne =>
-        otherLightDFun(light).flatMap(otherLight =>
-          driverTwoD(otherLight).flatMap(driverTwo =>
-            (driverOne, driverTwo) match {
-              case (Drive,Drive) => weightedCases(List((Crash,0.9),(NoCrash,0.1)))
-              case _ => always(NoCrash)
-            }))))
+        driverTwoD(otherLight(light)).flatMap(driverTwo =>
+          (driverOne, driverTwo) match {
+            case (Drive,Drive) => weightedCases(List((Crash,0.9),(NoCrash,0.1)))
+            case _ => always(NoCrash)
+          })))
   
   def crash(driverOneD: Light => Distribution[Action])(driverTwoD: Light => Distribution[Action])(lightD: Distribution[Light]): Distribution[CrashResult] =
     for (light <- lightD;
          driverOne <- driverOneD(light);
-         otherLight <- otherLightDFun(light);
-         driverTwo <- driverTwoD(otherLight);
+         driverTwo <- driverTwoD(otherLight(light));
          caseBothDrive <- weightedCases(List((Crash,0.9),(NoCrash,0.1)))) yield
     (driverOne,driverTwo) match {
       case (Drive,Drive) => caseBothDrive
@@ -163,6 +154,6 @@ object probabilisticModeling {
     println("model crash expectation: " + model.Expectation(H))
     // model crash expectation: 0.036899999999999995
     println("model2 crash expectation: " + model2.Expectation(H))
-    // model2 crash expectation: 0.0882
+    // model2 crash expectation: 0.08909999999999998
   }
 }
