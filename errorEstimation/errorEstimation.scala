@@ -19,9 +19,11 @@ object errorEstimation {
   implicit def int2estimate(x: Int): Estimate = new Estimate(x,0)
 
   def main(args: Array[String]) = {
-    println(((x: Estimate) => x+2*x+3*x*x)(1 +- 0.1))
+    println(({ x: Estimate => x+2*x+3*x*x})(1 +- 0.1))
     // 6.0 +- 0.93
-    println(((x: Estimate) => (((y: Estimate) => y*y + 2)(x+x)))(1 +- 0.1))
+    println(({ x: Estimate => 
+               val y = x+x
+               y*y + 2 })(1 +- 0.1))
     // 6.0 +- 0.84
     def poly(x: Estimate) = x+2*x+3/(x*x)
     println(poly(3.0 +- 0.1))
