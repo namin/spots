@@ -36,9 +36,9 @@ object probabilisticModeling {
     def Sample() =	
       (k(dist.Sample())).Sample()
     def Support() = 
-      dist.Support().flatMap(d => k(d).Support())
+      dist.Support().flatMap(k(_).Support())
     def Expectation(H : B => Double) = 
-      dist.Expectation(x => k(x).Expectation(H))
+      dist.Expectation(k(_).Expectation(H))
   }
 
   def weightedCases[A](inp: List[(A,Double)]): Distribution[A] = {
