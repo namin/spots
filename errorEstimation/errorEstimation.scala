@@ -9,7 +9,7 @@ object errorEstimation {
                    this.x.abs*that.e+that.x.abs*this.e+this.e*that.e)
     def / (that: Estimate) =
       new Estimate(this.x/that.x, 
-		   (this.x.abs*that.e+that.x.abs*this.e)/(that.x.abs*(that.x.abs-that.e)))
+                   (this.x.abs*that.e+that.x.abs*this.e)/(that.x.abs*(that.x.abs-that.e)))
     def +- (e2: Double) =
       new Estimate(x,e+e2)
     override def toString =
