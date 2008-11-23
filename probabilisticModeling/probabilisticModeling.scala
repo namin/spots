@@ -5,16 +5,16 @@ object probabilisticModeling {
   import scala.util.Random
 
   abstract class Distribution[A] {
-    def Sample(): A
-    def Support(): Set[A]
+    def Sample: A
+    def Support: Set[A]
     def Expectation(H: A => Double): Double
     def map[B](k: A => B) = flatMap((x: A) => always(k(x)))
     def flatMap[B](k: A => Distribution[B]): Distribution[B] = bind(this)(k)
   }
     
   def always[A](x: A) = new Distribution[A] {
-    def Sample() = x
-    def Support() = new Set1(x)
+    def Sample = x
+    def Support = new Set1(x)
     def Expectation(H: A => Double) = H(x)
   }
   
@@ -23,20 +23,20 @@ object probabilisticModeling {
   def coinFlip[A](p: Double)(d1: Distribution[A])(d2: Distribution[A]) = {
     if (p < 0.0 || p > 1.0) error("invalid probability")
     new Distribution[A] {
-      def Sample() = 
-        if (rnd.nextDouble() < p) d1.Sample() else d2.Sample() 
-      def Support() = 
-        d1.Support() ++ d2.Support()
+      def Sample = 
+        if (rnd.nextDouble() < p) d1.Sample else d2.Sample 
+      def Support = 
+        d1.Support ++ d2.Support
       def Expectation(H : A => Double) = 
         p * d1.Expectation(H) + (1.0-p) * d2.Expectation(H)
     }
   }
     
   def bind[A,B](dist: Distribution[A])(k: A => Distribution[B]): Distribution[B] = new Distribution[B] {
-    def Sample() =	
-      (k(dist.Sample())).Sample()
+    def Sample =	
+      (k(dist.Sample)).Sample
     def Support() = 
-      dist.Support().flatMap(k(_).Support())
+      dist.Support.flatMap(k(_).Support)
     def Expectation(H : B => Double) = 
       dist.Expectation(k(_).Expectation(H))
   }
@@ -136,15 +136,15 @@ object probabilisticModeling {
   }
 
   def main(args: Array[String]) = {
-    println("roulette sample: " + roulette.Sample())
+    println("roulette sample: " + roulette.Sample)
     // roulette sample: Odd
-    println("roulette sample (again): " + roulette.Sample())
+    println("roulette sample (again): " + roulette.Sample)
     // roulette sample (again): Even
     println("roulette payoff: " + roulettePayoff)
     // roulette payoff: 4.864864864864865
-    println("model sample: " + model.Sample())
+    println("model sample: " + model.Sample)
     // model sample: NoCrash
-    println("model2 sample: " + model2.Sample())
+    println("model2 sample: " + model2.Sample)
     // model2 sample: NoCrash
     println("model crash expectation: " + model.Expectation(H))
     // model crash expectation: 0.036899999999999995
