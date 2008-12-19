@@ -1,41 +1,51 @@
 import System.Random
-
--- Support is omitted, because I don't know how to integrate the (Ord a) 
--- constraint of the underlying set when creating a monad.
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 data Sample a = 
     Sample (IO a)
+
+data Support a =
+    Support ([a])
 
 data Expectation a =
     Expectation ((a -> Double) -> Double)
 
 data Distribution a = 
-    Distribution (Sample a) (Expectation a)
+    Distribution (Sample a) (Support a) (Expectation a)
 
 always x = 
-    Distribution (Sample sample) (Expectation expectation)
+    Distribution (Sample sample) (Support support) (Expectation expectation)
     where sample = return x
+          support = [x]
           expectation h = h(x)
 
 rnd :: IO Double
 rnd = getStdRandom (randomR (0.0,1.0))
 
 coinFlip p 
-         (Distribution (Sample sample1) (Expectation expectation1)) 
-         (Distribution (Sample sample2) (Expectation expectation2)) =
-    Distribution (Sample sample) (Expectation expectation)
+         (Distribution (Sample sample1) (Support support1) (Expectation expectation1)) 
+         (Distribution (Sample sample2) (Support support2) (Expectation expectation2)) =
+    Distribution (Sample sample) (Support support) (Expectation expectation)
     where sample = do rndProb <- rnd; if rndProb < p then sample1 else sample2
+          support = support1 ++ support2
           expectation h = p * expectation1(h) + (1.0-p) * expectation2(h)
 
-distSample (Distribution (Sample sample) (Expectation expectation)) = sample
-distExpectation (Distribution (Sample sample) (Expectation expectation)) = expectation
+distSample (Distribution (Sample sample) (Support support) (Expectation expectation)) = sample
+distSupport (Distribution (Sample sample) (Support support) (Expectation expectation)) = support
+distExpectation (Distribution (Sample sample) (Support support) (Expectation expectation)) = expectation
 
 (|>) x f = f x
 
 bind dist k =
-    Distribution (Sample sample) (Expectation expectation)
+    Distribution (Sample sample) (Support support) (Expectation expectation)
     where sample = do d <- dist |> distSample; k d |> distSample
+          support = dist |> distSupport |> concatMap (\d -> (k d) |> distSupport)
           expectation h = (dist |> distExpectation)(\x -> ((k x) |> distExpectation)(h))
+
+distWithCleanSupport (Distribution s (Support support) e) =
+    Distribution s (Support support') e
+    where support' = support |> Set.fromList |> Set.toList
 
 instance Monad Distribution where
     (>>=) = bind
