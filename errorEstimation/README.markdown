@@ -8,4 +8,7 @@ quotations. Instead, I simply create a new arithmetic type for
 estimates, and use implicit views to handily convert from the usual
 arithmetic types.
 
+The example also translates nicely into Haskell by using the numeric
+type classes.
+
 [1]: http://www.expert-fsharp.com
