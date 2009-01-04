@@ -1,0 +1,8 @@
+# Evaluates to AST_NUM 65536.
+
+let
+  twice = fn f => fn x => f (f x)
+in
+  twice twice twice twice succ 0
+end
+

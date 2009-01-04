@@ -1,0 +1,17 @@
+# Evaluates to AST_NUM 6765.
+
+let plus = rec p =>
+      fn x => fn y => if iszero x then y else p (pred x) (succ y)
+in
+  let fibonacci = rec f =>
+	fn n => if iszero n then
+		  0
+		else if iszero (pred n) then
+		  1
+		else
+		  plus (f (pred n)) (f (pred (pred n)))
+  in
+    fibonacci 20
+  end
+end
+

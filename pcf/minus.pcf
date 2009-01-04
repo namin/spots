@@ -1,0 +1,8 @@
+# Evaluates to AST_NUM 46.
+
+let minus = rec m =>
+      fn x => fn y => if iszero y then x else m (pred x) (pred y)
+in
+  minus 125 79
+end
+

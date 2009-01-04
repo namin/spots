@@ -1,0 +1,46 @@
+
+# Here we show that, quite surprisingly, we can implement *lists* in PCF
+# by using *first-class functions*.  The basic idea is that a list is
+# represented by a function f, where f 0 returns the head, f 1 returns
+# the tail, and f 2 returns true if the list is empty and false otherwise.
+
+let cons = fn x => fn xs => fn n =>
+	     if iszero n then x else if iszero (pred n) then xs else false
+in
+  let nil = fn n => true   # This is flawed; hd nil and tl nil both return true!
+  in
+    let hd = fn f => f 0
+    in
+      let tl = fn f => f 1
+      in
+	let null = fn f => f 2
+	in
+	  let equal = rec e =>	# This tests whether two integers are equal.
+		fn a => fn b => if iszero a then
+				  iszero b
+				else if iszero b then
+				  false
+				else
+				  e (pred a) (pred b)
+	  in
+	    let member = rec m =>
+		  fn n => fn ns => if null ns then
+				     false
+				   else if equal n (hd ns) then
+				     true
+				   else
+				     m n (tl ns)
+	    in
+	      member 4 (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil)))))
+	    end
+	  end
+	end
+      end
+    end
+  end
+end
+
+# The output of this program is, of course, AST_BOOL true.
+# Unfortunately, lists can't be displayed nicely---they print out as
+# huge AST_FUN terms...
+
