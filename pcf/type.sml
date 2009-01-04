@@ -140,7 +140,7 @@ fun canonical' (E, VAR v) =
         (let val t = newtypevar() 
          in 
            ((update E v t), t) 
-        end))
+         end))
 |   canonical' (E, ARROW (t1, t2)) =
       let val (E, t1') = canonical' (E, t1)
           val (E, t2') = canonical' (E, t2)
