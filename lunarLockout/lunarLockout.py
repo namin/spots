@@ -7,7 +7,7 @@ def moves(board):
                 if [f for (e,f) in board if min(b,d)<f<max(b,d) and e==a] == []:
                     yield ((a,b),(a,d+((b>d and 1) or -1)))
             elif b==d and abs(a-c)>=1:
-		if [e for (e,f) in board if min(a,c)<e<max(a,c) and f==b] == []:
+                if [e for (e,f) in board if min(a,c)<e<max(a,c) and f==b] == []:
                     yield ((a,b),(c+((a>c and 1) or -1),b))
 
 ## [m for m in moves(ex_board)]
@@ -36,15 +36,15 @@ def bfs(cs,seen=None):
     seen = seen or []
     next_cs = []
     for (path,board) in cs:
-	if is_solution(board):
-	    return path
-	for move in moves(board):
-	    new_board = apply_move(move,board)
-	    if new_board not in seen:
-		next_cs.append((path+[move],new_board))
-		seen.append(new_board)
+        if is_solution(board):
+            return path
+        for move in moves(board):
+            new_board = apply_move(move,board)
+            if new_board not in seen:
+                next_cs.append((path+[move],new_board))
+                seen.append(new_board)
     if next_cs == []:
-	return None
+        return None
     return bfs(next_cs, seen)
 
 def solve(board):
