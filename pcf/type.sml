@@ -107,15 +107,13 @@ fun W (E, AST_ID x)    = (identity, E x)
 |   W (E, AST_FUN (x, e)) =
       let val t1 = newtypevar()
           val (s, t2) = W (update E x t1, e)
-          (* Double-check the type inferred for t1. *)
-          val _ = W (update E x (s t1), e)
       in
         (s, s (ARROW (t1, t2)))
       end
 |   W (E, AST_APP (e1, e2)) =
       let val (s1, t1) = W (E, e2)
           val t2 = newtypevar()
-          val (s2, t3) = W (E, e1)
+          val (s2, t3) = W (s1 o E, e1)
           val s3 = unify((s2 o s1) t3, ARROW ((s2 o s1) t1, t2))
           val s = s3 o s2 o s1
       in
