@@ -92,9 +92,9 @@ end
 fun W (E, AST_ID x)    = (identity, E x)
 |   W (E, AST_NUM _)   = (identity, INT)
 |   W (E, AST_BOOL _)  = (identity, BOOL)
-|   W (E, AST_SUCC)    = (identity, ARROW (INT,INT))
-|   W (E, AST_PRED)    = (identity, ARROW (INT,INT))
-|   W (E, AST_ISZERO)  = (identity, ARROW (INT,BOOL))
+|   W (E, AST_SUCC)    = (identity, ARROW (INT, INT))
+|   W (E, AST_PRED)    = (identity, ARROW (INT, INT))
+|   W (E, AST_ISZERO)  = (identity, ARROW (INT, BOOL))
 |   W (E, AST_IF (e1, e2, e3)) =
       let val (s1, t1) = W (E, e1)
           val s2 = unify(t1, BOOL)
