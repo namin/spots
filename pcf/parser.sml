@@ -8,7 +8,7 @@
 *)
 
 (*  Increase print depth so abstract syntax trees get displayed completely.  *)
-Compiler.Control.Print.printDepth:= 100;
+Control.Print.printDepth:= 100;
 
 datatype term = AST_ID of string | AST_NUM of int | AST_BOOL of bool
   | AST_FUN of (string * term) | AST_APP of (term * term) 
