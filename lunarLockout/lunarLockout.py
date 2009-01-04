@@ -1,14 +1,13 @@
 center = (2,2)
 ex_board = [(2,4),(0,4),(1,2),(1,0),(4,2)]
+
 def moves(board):
     for (a,b) in board:
         for (c,d) in board:
-            if a==c and abs(b-d)>=1:
-                if [f for (e,f) in board if min(b,d)<f<max(b,d) and e==a] == []:
-                    yield ((a,b),(a,d+((b>d and 1) or -1)))
-            elif b==d and abs(a-c)>=1:
-                if [e for (e,f) in board if min(a,c)<e<max(a,c) and f==b] == []:
-                    yield ((a,b),(c+((a>c and 1) or -1),b))
+            if   a==c and abs(b-d)>=1 and not any([e==a and min(b,d)<f<max(b,d) for (e,f) in board]):
+                yield (a,b), (a,d+(1 if b>d else -1))
+            elif b==d and abs(a-c)>=1 and not any([f==b and min(a,c)<e<max(a,c) for (e,f) in board]):
+                yield (a,b), (c+(1 if a>c else -1),b)
 
 ## [m for m in moves(ex_board)]
 #. [((2, 4), (1, 4)), ((0, 4), (1, 4)), ((1, 2), (1, 1)), ((1, 2), (3, 2)), ((1, 0), (1, 1)), ((4, 2), (2, 2))]
