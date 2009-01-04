@@ -29,6 +29,8 @@ fun interp (AST_NUM n) = AST_NUM n
 |   interp AST_PRED = AST_PRED
 |   interp AST_ISZERO = AST_ISZERO
 |   interp (AST_FUN (x,e)) = AST_FUN (x,e)
+|   interp (AST_ID _) = AST_ERROR "unbound identifier"
+|   interp (AST_REC (x,e)) = interp (subst e x (AST_REC (x,e)))
 |   interp (AST_IF (e1, e2, e3)) =
      (case (interp e1) of
 	  (AST_ERROR s)          => AST_ERROR s
@@ -49,8 +51,6 @@ fun interp (AST_NUM n) = AST_NUM n
 	| (AST_ISZERO, _)         => AST_ERROR "iszero needs int argument"
 	| (AST_FUN (x,e), v)      => interp (subst e x v)
 	| (_, _)                  => AST_ERROR "not a functional application")
-|   interp (AST_ID _) = AST_ERROR "unbound identifier"
-|   interp (AST_REC _) = AST_ERROR "custom recursive functions not implemented"
 
 (*  
 interp (parsestr "succ (succ 7)");
@@ -69,8 +69,11 @@ interp (parsefile "twice.pcf");
 val it = AST_NUM 65536 : term
 
 interp (parsefile "minus.pcf");
+val it = AST_NUM 46 : term
 
 interp (parsefile "factorial.pcf");
+val it = AST_NUM 720 : term
 
 interp (parsefile "fibonacci.pcf");
+val it = AST_NUM 6765 : term
 *)
