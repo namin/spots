@@ -6,12 +6,12 @@ datatype typ = VAR of string | INT | BOOL | ARROW of typ * typ
 
 (*  Convert a typ to a string, using as few parentheses as possible.  *)
 
-fun typ2str (VAR a)		= "'" ^ a
-|   typ2str INT			= "int"
-|   typ2str BOOL		= "bool"
+fun typ2str (VAR a)             = "'" ^ a
+|   typ2str INT                 = "int"
+|   typ2str BOOL                = "bool"
 |   typ2str (ARROW(t1 as ARROW(_, _), t2)) =	(*  the tricky bit  *)
       "(" ^ typ2str t1 ^ ") -> " ^ typ2str t2
-|   typ2str (ARROW(t1, t2))	= typ2str t1 ^ " -> " ^ typ2str t2
+|   typ2str (ARROW(t1, t2))     = typ2str t1 ^ " -> " ^ typ2str t2
 
 (*  A substitution is just a function typ -> typ.  *)
 
@@ -46,9 +46,9 @@ fun unify (VAR a, t) =
 |   unify (BOOL, BOOL) = identity
 |   unify (ARROW(t1, t2), ARROW(t3, t4)) =
       let val s1 = unify (t1, t3)
-	  val s2 = unify (s1 t2, s1 t4)
+          val s2 = unify (s1 t2, s1 t4)
       in
-	  s2 o s1
+          s2 o s1
       end
 |   unify (_, _) = raise Mismatch
 
@@ -69,7 +69,7 @@ fun update E (x : string) (ty : typ) y = if x = y then ty else E y
 
 local
   val letters = ["a","b","c","d","e","f","g","h","i","j","k","l","m",
-		 "n","o","p","q","r","s","t","u","v","w","x","y","z"]
+                 "n","o","p","q","r","s","t","u","v","w","x","y","z"]
   val cnt = ref 0
   val typevars = ref letters
 in
