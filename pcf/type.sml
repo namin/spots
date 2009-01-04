@@ -131,41 +131,78 @@ fun W (E, AST_ID x)    = (identity, E x)
       end
 |   W (E, AST_ERROR _) = raise Mismatch (* shouldn't happen *)
 
+(*  Put a type in canonical form, such that the type variables start
+ *  from scratch. 
+ *)
+
+fun canonical' (E, VAR v) = 
+      ((E, (E v)) handle UnboundID => 
+        (let val t = newtypevar() 
+         in 
+           ((update E v t), t) 
+        end))
+|   canonical' (E, ARROW (t1, t2)) =
+      let val (E, t1') = canonical' (E, t1)
+          val (E, t2') = canonical' (E, t2)
+      in
+        (E, ARROW (t1', t2'))
+      end
+|   canonical' (E, x) = (E, x)
+
+fun canonical t = 
+  (reset (); 
+  let val ( _, t) = canonical' (emptyenv, t)
+  in
+    t
+  end)
+
 (*  Here's a driver program that uses W to find the principal type of e
- *  and then displays it nicely, using typ2str.
+ *  and then displays it nicely.
  *)
 
 fun infer e =
   let val (s, t) = (reset (); W (emptyenv, e))
   in
-    print ("The principal type is\n  " ^ typ2str t ^ "\n")
+    print ("The principal type is\n  " ^ typ2str (canonical t) ^ "\n")
   end
 
 (*
 infer (parsestr "fn f => fn g => g (f true) (f 1)");
+exception Mismatch
 
 infer (parsestr "fn f => fn x => f (f x)");
+('a -> 'a) -> 'a -> 'a
 
 infer (parsestr "fn f => fn g => fn x => f (g x)");
+('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 
 infer (parsestr "fn b => if b then 1 else 0");
+bool -> int
 
 infer (parsestr "rec f => fn b => if b then 1 else f true");
+bool -> int
 
 infer (parsestr "rec f => fn x => f x");
+'a -> 'b
 
 infer (parsestr "rec m => fn x => fn y => if iszero y then x else m (pred x) (pred y)");
+int -> int -> int
 
 infer (parsestr "rec even => fn n => if iszero n then true else if iszero (pred n) then false else even (pred (pred n))");
+int -> bool
 
 infer (parsefile "twice.pcf");
+exception Circularity
 
 infer (parsefile "minus.pcf");
+int
 
 infer (parsefile "factorial.pcf");
+int
 
 infer (parsefile "fibonacci.pcf");
+int
 
 infer (parsefile "lists.pcf");
-
+exception Mismatch
 *)
