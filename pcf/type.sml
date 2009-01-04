@@ -107,6 +107,8 @@ fun W (E, AST_ID x)    = (identity, E x)
 |   W (E, AST_FUN (x, e)) =
       let val t1 = newtypevar()
           val (s, t2) = W (update E x t1, e)
+          (* Double-check the type inferred for t1. *)
+          val _ = W (update E x (s t1), e)
       in
         (s, s (ARROW (t1, t2)))
       end
@@ -114,9 +116,8 @@ fun W (E, AST_ID x)    = (identity, E x)
       let val (s1, t1) = W (E, e2)
           val t2 = newtypevar()
           val (s2, t3) = W (E, e1)
-          val s21 = s2 o s1
-          val s3 = unify(s21 t3, ARROW (s21 t1, t2))
-          val s = s3 o s21
+          val s3 = unify((s2 o s1) t3, ARROW ((s2 o s1) t1, t2))
+          val s = s3 o s2 o s1
       in
         (s, s t2)
       end
@@ -141,6 +142,8 @@ fun infer e =
   end
 
 (*
+infer (parsestr "fn f => fn g => g (f true) (f 1)");
+
 infer (parsestr "fn f => fn x => f (f x)");
 
 infer (parsestr "fn f => fn g => fn x => f (g x)");
