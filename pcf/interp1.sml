@@ -70,4 +70,7 @@ val it = AST_NUM 720 : term
 
 interp (parsefile "fibonacci.pcf");
 val it = AST_NUM 6765 : term
+
+interp (parsefile "lists.pcf");
+val it = AST_BOOL true : term
 *)
