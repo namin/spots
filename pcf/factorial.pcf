@@ -1,0 +1,16 @@
+# Evaluates to AST_NUM 720.
+
+let plus = rec p =>
+      fn x => fn y => if iszero x then y else p (pred x) (succ y)
+in
+  let times = rec t =>
+	fn x => fn y => if iszero x then 0 else plus y (t (pred x) y)
+  in
+    let factorial = rec f =>
+	  fn n => if iszero n then 1 else times n (f (pred n))
+    in
+      factorial 6
+    end
+  end
+end
+
