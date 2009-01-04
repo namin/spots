@@ -7,7 +7,7 @@ fun subst (AST_IF (e1, e2, e3)) x t = AST_IF ((subst e1 x t),(subst e2 x t),(sub
 |   subst (AST_ID v) x t = if v=x then t else AST_ID v
 |   subst (AST_FUN (v,e)) x t = AST_FUN (v, if v=x then e else (subst e x t)) 
 |   subst (AST_REC (v,e)) x t = AST_REC (v, if v=x then e else (subst e x t)) 
-|   subst e x t = e
+|   subst e _ _ = e
 
 (*  
 subst (AST_APP (AST_SUCC,AST_ID "x")) "x" (AST_NUM 1);
@@ -20,16 +20,9 @@ val it =
   : term
 *)
 
-(*  interp : term -> term. *)
+(*  interp : term -> term *)
 
-fun interp (AST_NUM n) = AST_NUM n
-|   interp (AST_BOOL b) = AST_BOOL b
-|   interp (AST_ERROR s) = AST_ERROR s
-|   interp AST_SUCC = AST_SUCC
-|   interp AST_PRED = AST_PRED
-|   interp AST_ISZERO = AST_ISZERO
-|   interp (AST_FUN (x,e)) = AST_FUN (x,e)
-|   interp (AST_ID _) = AST_ERROR "unbound identifier"
+fun interp (AST_ID _) = AST_ERROR "unbound identifier"
 |   interp (AST_REC (x,e)) = interp (subst e x (AST_REC (x,e)))
 |   interp (AST_IF (e1, e2, e3)) =
      (case (interp e1) of
@@ -51,6 +44,7 @@ fun interp (AST_NUM n) = AST_NUM n
 	| (AST_ISZERO, _)         => AST_ERROR "iszero needs int argument"
 	| (AST_FUN (x,e), v)      => interp (subst e x v)
 	| (_, _)                  => AST_ERROR "not a functional application")
+|   interp e = e
 
 (*  
 interp (parsestr "succ (succ 7)");
