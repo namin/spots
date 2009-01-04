@@ -114,7 +114,7 @@ fun W (E, AST_ID x)    = (identity, E x)
       let val (s1, t1) = W (E, e2)
           val t2 = newtypevar()
           val (s2, t3) = W (s1 o E, e1)
-          val s3 = unify((s2 o s1) t3, ARROW ((s2 o s1) t1, t2))
+          val s3 = unify(s2 t3, ARROW ((s2 o s1) t1, t2))
           val s = s3 o s2 o s1
       in
         (s, s t2)
