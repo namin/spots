@@ -151,7 +151,7 @@ fun canonical' (E, VAR v) =
 
 fun canonical t = 
   (reset (); 
-  let val ( _, t) = canonical' (emptyenv, t)
+  let val (_, t) = canonical' (emptyenv, t)
   in
     t
   end)
