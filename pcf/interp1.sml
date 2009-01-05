@@ -32,7 +32,7 @@ fun interp (AST_ID _) = AST_ERROR "unbound identifier"
         | (_)                    => AST_ERROR "if condition must be a bool")
 |   interp (AST_APP (e1, e2)) =
      (case (interp e1, interp e2) of
-          (AST_ERROR s, _)	  => AST_ERROR s
+          (AST_ERROR s, _)        => AST_ERROR s
         | (_, AST_ERROR s)        => AST_ERROR s
         | (AST_SUCC, AST_NUM n)   => AST_NUM (n+1)
         | (AST_SUCC, _)           => AST_ERROR "succ needs int argument"
