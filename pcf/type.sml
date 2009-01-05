@@ -164,9 +164,14 @@ fun infer e =
     print ("The principal type is\n  " ^ typ2str (canonical t) ^ "\n")
   end
 
-(*
+(* 
+(* test for // wrongly independent substitutions in AST_APP *)
 infer (parsestr "fn f => fn g => g (f true) (f 1)");
 exception Mismatch
+
+(* test for wrong ordering of substitutions in AST_REC *)
+infer (parsestr "rec f => rec g => fn x => f (g x)");
+'a -> 'a
 
 infer (parsestr "fn f => fn x => f (f x)");
 ('a -> 'a) -> 'a -> 'a
@@ -182,6 +187,9 @@ bool -> int
 
 infer (parsestr "rec f => fn x => f x");
 'a -> 'b
+
+infer (parsestr "rec f => rec g => fn x => f (f x)");
+'a -> 'a
 
 infer (parsestr "rec m => fn x => fn y => if iszero y then x else m (pred x) (pred y)");
 int -> int -> int
