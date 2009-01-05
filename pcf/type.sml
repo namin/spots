@@ -123,7 +123,7 @@ fun W (E, AST_ID x)    = (identity, E x)
       let val t = newtypevar()
           val (s1, te) = W (update E x t, e)
           val s2 = unify(s1 t, s1 te)
-          val s = s1 o s2
+          val s = s2 o s1
       in
         (s, s t)
       end
