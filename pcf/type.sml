@@ -89,13 +89,37 @@ end
 
 (*  Milner's algorithm W : (string -> typ) * term -> (typ -> typ) * typ *)
 
-fun W (E, AST_ID x)    = (identity, E x)
-|   W (E, AST_NUM _)   = (identity, INT)
-|   W (E, AST_BOOL _)  = (identity, BOOL)
-|   W (E, AST_SUCC)    = (identity, ARROW (INT, INT))
-|   W (E, AST_PRED)    = (identity, ARROW (INT, INT))
-|   W (E, AST_ISZERO)  = (identity, ARROW (INT, BOOL))
+fun W (E, AST_ID x)    = 
+      (* E(x) = t 
+         ----------
+         E |- x : t *)
+      (identity, E x)
+
+|   W (E, AST_NUM _)   =
+      (* E |- n : int *)
+      (identity, INT)
+
+|   W (E, AST_BOOL _)  = 
+      (* E |- true : bool
+         E |- false : bool *)
+      (identity, BOOL)
+
+|   W (E, AST_SUCC)    = 
+      (* E |- succ : int -> int *)
+      (identity, ARROW (INT, INT))
+
+|   W (E, AST_PRED)    = 
+      (* E |- pred : int -> int *)
+      (identity, ARROW (INT, INT))
+
+|   W (E, AST_ISZERO)  = 
+      (* E |- iszero : int -> bool *)
+      (identity, ARROW (INT, BOOL))
+
 |   W (E, AST_IF (e1, e2, e3)) =
+      (* E |- e1 : bool  E |- e2 : t  E |- e3 : t
+         ----------------------------------------
+         E |- if e1 then e2 else e3 : t           *)
       let val (s1, t1) = W (E, e1)
           val s2 = unify(t1, BOOL)
           val (s3, t2) = W (s2 o s1 o E, e2)
@@ -104,13 +128,21 @@ fun W (E, AST_ID x)    = (identity, E x)
       in
         (s5 o s4 o s3 o s2 o s1, s5 t3)
       end
+
 |   W (E, AST_FUN (x, e)) =
+      (* E[x : t1] |- e : t2
+         -------------------------
+         E |- fn x => e : t1 -> t2 *)
       let val t1 = newtypevar()
           val (s, t2) = W (update E x t1, e)
       in
         (s, s (ARROW (t1, t2)))
       end
+
 |   W (E, AST_APP (e1, e2)) =
+      (* E |- e1 : t1 -> t2  E |- e2 : t1
+         --------------------------------
+         E |- e1 e2 : t2                  *)
       let val (s1, t1) = W (E, e2)
           val t2 = newtypevar()
           val (s2, t3) = W (s1 o E, e1)
@@ -119,7 +151,11 @@ fun W (E, AST_ID x)    = (identity, E x)
       in
         (s, s t2)
       end
+
 |   W (E, AST_REC (x, e)) =
+      (* E[x : t] |- e : t
+         -------------------
+         E |- rec x => e : t *)
       let val t = newtypevar()
           val (s1, te) = W (update E x t, e)
           val s2 = unify(s1 t, s1 te)
@@ -127,6 +163,7 @@ fun W (E, AST_ID x)    = (identity, E x)
       in
         (s, s t)
       end
+
 |   W (E, AST_ERROR _) = raise Mismatch (* shouldn't happen *)
 
 (*  Put a type in canonical form, such that the type variables start
