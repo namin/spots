@@ -248,4 +248,7 @@ int
 
 infer (parsefile "lists.pcf");
 exception Mismatch
+
+infer (parsefile "not.pcf");
+exception Mismatch
 *)
