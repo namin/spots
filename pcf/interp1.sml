@@ -73,4 +73,7 @@ val it = AST_NUM 6765 : term
 
 interp (parsefile "lists.pcf");
 val it = AST_BOOL true : term
+
+interp (parsefile "not.pcf");
+val it = AST_BOOL false : term
 *)
