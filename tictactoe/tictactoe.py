@@ -123,9 +123,9 @@ def line_winning(line, n=None):
 ## line_winning('xox')
 #. False
 
-def all(xs):
-  for x in xs:
-    if not x:
+def all(vs):
+  for v in vs:
+    if not v:
       return False
   return True
 
@@ -311,13 +311,15 @@ def board_play(board, n=None, turn=None):
       turn = turn_switch(turn)
   
   print 'Game over'
-  status = board_status(board, n)
+  print status_pretty(board_status(board, n), turn)
+
+def status_pretty(status, turn):
   if status == unknown:
-    print turn, ' gave up'
+    return turn + ' gave up'
   elif status == draw:
-    print '.... draw ...'
+    return '.... draw ...'
   else:
-    print status, 'won'
+    return status + ' won'
 
 ## board_play(bu)
 #. Turn of  x
@@ -424,6 +426,65 @@ def board_play(board, n=None, turn=None):
 #. .... draw ...
 #. 
 
+def interactive_game(n=3, board=None, turn=None):
+  board = board or (blank * n * n)
+  turn = turn or board_turn(board)
+
+  print board_pretty(board)
+
+  row, col = None, None
+
+  while row == None or col == None:
+    move = input('Your turn: ')
+    try:
+      row, col = move
+    except ValueError:
+      print 'Invalid move: enter a tuple, like (0, 0)'
+    if row >= n:
+      row = None
+      print 'Invalid row', row
+    if col >= n:
+      col = None
+      print 'Invalid column', col
+    v = board_get(board, row, col, n)
+    if v != blank:
+      row, col = None, None
+      print 'Box already taken by', v
+
+  board = board_apply(board, move, n, x)
+  status = board_status(board, n)
+
+  print 'You played', turn, 'on', move
+  print board_pretty(board)
+
+  if status != unknown:
+    print 'Game over'
+    print status_pretty(status, turn)
+    return
+
+  other_turn = turn_switch(turn)
+
+  _, move = board_suggest(
+    board, n, other_turn)
+
+  if move == None:
+    print 'Game over'
+    print status_pretty(unknown, other_turn)
+    return
+
+  board = board_apply(
+    board, move, n, other_turn)
+  print other_turn, 'played on', move
+
+  status = board_status(board, n)
+  if status != unknown:
+    print board_pretty(board)
+    print 'Game over'
+    print status_pretty(status, other_turn)
+    return
+  
+  interactive_game(3, board, turn)
+
 if __name__ == '__main__':
-  board_play(be)
+  interactive_game()
 
