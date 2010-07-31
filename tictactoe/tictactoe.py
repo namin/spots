@@ -9,6 +9,7 @@ bu = '--x-xooox'
 bo = '--x-xoo-x'
 bx = 'xoxox-o-x'
 bd = 'ooxxxooxx'
+bs = 'o---x----'
 
 def board_length(board):
   a = len(board)
@@ -175,14 +176,106 @@ def board_turn(board):
 def board_moves(board, n=None):
   n = n or board_length(board)
 
-  for row in xrange(0, n):
-    for col in xrange(0, n):
-      if board_get(
-	board, row, col, n) == blank:
-	yield (row, col)
+  return (
+    (row, col)
+    for row in xrange(n)
+    for col in xrange(n)
+    if board_get(board, row, col, n) == blank)
+
+## list(board_moves(be))
+#. [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
 
 ## list(board_moves(bu))
 #. [(0, 0), (0, 1), (1, 0)]
+
+## list(board_moves(bs))
+#. [(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1), (2, 2)]
+
+def swap(t):
+  a, b = t
+  return (b, a)
+
+def fst(t):
+  a, _ = t
+  return a
+
+def snd(t):
+  _, b = t
+  return b
+
+def sym_switch(sym):
+  pairs, boxes = sym
+  return (
+    [(swap(box1), swap(box2)) for (box1, box2) in pairs],
+    set([swap(box) for box in boxes]))
+
+def symmetries(n):
+  last = n - 1
+  sym_x = (
+    [((row1, col), (row2, col))
+    for (row1, row2) in [(i, last - i) for i in xrange(n / 2)]
+    for col in xrange(n)],
+    set([(row, col)
+	 for row in range((n + 1) / 2)
+	 for col in xrange(n)]))
+
+  sym_y = sym_switch(sym_x)
+
+  sym_d = (
+    [((row, col), (last - col, last - row))
+     for row in xrange(n - 1)
+     for col in xrange(n - row - 1)],
+    set([(row, col)
+	 for row in xrange(n)
+	 for col in xrange(n - row)]))
+
+  lower_left_triangle = [
+    (row, col)
+    for row in xrange(n)
+    for col in xrange(row + 1)]
+
+  sym_dr = (
+    [(box, swap(box))
+     for box in lower_left_triangle
+     if fst(box) != snd(box)],
+    set(lower_left_triangle))
+     
+  return [sym_x, sym_y, sym_d, sym_dr]
+
+## symmetries(3)
+#. [([((0, 0), (2, 0)), ((0, 1), (2, 1)), ((0, 2), (2, 2))], set([(0, 1), (1, 2), (0, 0), (1, 1), (1, 0), (0, 2)])), ([((0, 0), (0, 2)), ((1, 0), (1, 2)), ((2, 0), (2, 2))], set([(0, 1), (0, 0), (2, 1), (2, 0), (1, 0), (1, 1)])), ([((0, 0), (2, 2)), ((0, 1), (1, 2)), ((1, 0), (2, 1))], set([(0, 1), (0, 0), (1, 1), (2, 0), (1, 0), (0, 2)])), ([((1, 0), (0, 1)), ((2, 0), (0, 2)), ((2, 1), (1, 2))], set([(0, 0), (2, 1), (2, 0), (2, 2), (1, 0), (1, 1)]))]
+
+def symmetry_try(sym, board, moves, n=None):
+  n = n or board_length(board)
+
+  pairs, boxes = sym
+
+  for ((r1, c1), (r2, c2)) in pairs:
+    v1 = board_get(board, r1, c1, n)
+    v2 = board_get(board, r2, c2, n)
+    if v1 != v2:
+      return moves
+
+  return moves.intersection(boxes)
+
+def board_distinct_moves(board, n=None, syms=None):
+  n = n or board_length(board)
+  syms = symmetries(n)
+
+  moves = set(board_moves(board, n))
+  for sym in syms:
+    moves = symmetry_try(sym, board, moves, n)
+
+  return moves
+
+## board_distinct_moves(be)
+#. set([(1, 0), (0, 0), (1, 1)])
+
+## board_distinct_moves(bu)
+#. set([(0, 1), (1, 0), (0, 0)])
+
+## board_distinct_moves(bs)
+#. set([(2, 0), (1, 0), (2, 1), (2, 2)])
 
 def turn_switch(turn):
   assert turn == x or turn == o
@@ -212,7 +305,7 @@ def board_analyze(board, n=None, turn=None):
   draw_moves = []
   losing_moves = []
 
-  for move in board_moves(board, n):
+  for move in board_distinct_moves(board, n):
     new_board = board_apply(
         board, move, n, turn)
     result = board_result(new_board, n, turn)
@@ -257,7 +350,7 @@ def board_suggest(board, n=None, turn=None):
   turn = turn or board_turn(board)
 
   draw_result = (None, None)
-  for move in board_moves(board, n):
+  for move in board_distinct_moves(board, n):
     new_board = board_apply(
         board, move, n, turn)
     result = board_result(new_board, n, turn)
@@ -272,7 +365,7 @@ def board_suggest(board, n=None, turn=None):
 #. ('x', (0, 0))
 
 ## board_suggest('---ox----')
-#. ('!', (2, 1))
+#. ('!', (0, 0))
 
 def board_play(board, n=None, turn=None):
   n = n or board_length(board)
@@ -337,17 +430,17 @@ def status_pretty(status, turn):
 #. -----
 #. o| |x
 #. Turn of  x
+#. o|o|x
+#. -----
+#. x|x|o
+#. -----
 #. o| |x
-#. -----
-#. x|x|o
-#. -----
-#. o|o|x
 #. Turn of  o
-#. o|x|x
+#. o|o|x
 #. -----
 #. x|x|o
 #. -----
-#. o|o|x
+#. o|x|x
 #. Game over
 #. .... draw ...
 #. 
@@ -360,41 +453,41 @@ def status_pretty(status, turn):
 #. -----
 #.  | | 
 #. Turn of  o
+#. x| | 
+#. -----
+#. o|x| 
+#. -----
 #.  | | 
+#. Turn of  x
+#. x| | 
 #. -----
 #. o|x| 
 #. -----
-#.  |x| 
-#. Turn of  x
-#.  |o| 
+#.  | |o
+#. Turn of  o
+#. x| | 
 #. -----
 #. o|x| 
 #. -----
-#.  |x| 
-#. Turn of  o
-#.  |o| 
-#. -----
-#. o|x|x
-#. -----
-#.  |x| 
+#. x| |o
 #. Turn of  x
-#.  |o| 
+#. x| |o
 #. -----
-#. o|x|x
+#. o|x| 
 #. -----
-#.  |x|o
+#. x| |o
 #. Turn of  o
-#.  |o| 
+#. x| |o
 #. -----
 #. o|x|x
 #. -----
-#. x|x|o
+#. x| |o
 #. Turn of  x
-#.  |o|o
+#. x|o|o
 #. -----
 #. o|x|x
 #. -----
-#. x|x|o
+#. x| |o
 #. Turn of  o
 #. x|o|o
 #. -----
