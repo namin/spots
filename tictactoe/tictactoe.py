@@ -256,15 +256,10 @@ def board_result(board, n=None, turn=None):
     return result
 
   other_turn = turn_switch(turn)
-  (w, d, l) = board_analyze(
+  result, _ = board_suggest(
     board, n, other_turn)
 
-  if w != []:
-    return other_turn
-  elif d != []:
-    return draw
-  else:
-    return turn
+  return result
 
 ## board_analyze(bd)
 #. ([], [], [])
@@ -282,23 +277,23 @@ def board_suggest(board, n=None, turn=None):
   n = n or board_length(board)
   turn = turn or board_turn(board)
 
-  draw_move = None
+  draw_result = (None, None)
   for move in board_moves(board, n):
     new_board = board_apply(
         board, move, n, turn)
     result = board_result(new_board, n, turn)
     if result == turn:
-      return move
+      return (result, move)
     elif result == draw:
-      draw_move = move
+      draw_result = (result, move)
 
-  return draw_move
+  return draw_result
 
 ## board_suggest(bu)
-#. (0, 0)
+#. ('x', (0, 0))
 
 ## board_suggest('---ox----')
-#. (0, 0)
+#. ('!', (2, 1))
 
 def board_play(board, n=None, turn=None):
   n = n or board_length(board)
@@ -309,7 +304,7 @@ def board_play(board, n=None, turn=None):
     print 'Turn of ', turn
     print board_pretty(board, n)
 
-    move = board_suggest(board, n, turn)
+    _, move = board_suggest(board, n, turn)
     if move:
       board = board_apply(
 	board, move, n, turn)
@@ -384,14 +379,51 @@ def board_play(board, n=None, turn=None):
 #. -----
 #.  | | 
 #. Turn of  o
-#. x| | 
+#.  | | 
 #. -----
 #. o|x| 
 #. -----
-#.  | | 
+#.  |x| 
+#. Turn of  x
+#.  |o| 
+#. -----
+#. o|x| 
+#. -----
+#.  |x| 
+#. Turn of  o
+#.  |o| 
+#. -----
+#. o|x|x
+#. -----
+#.  |x| 
+#. Turn of  x
+#.  |o| 
+#. -----
+#. o|x|x
+#. -----
+#.  |x|o
+#. Turn of  o
+#.  |o| 
+#. -----
+#. o|x|x
+#. -----
+#. x|x|o
+#. Turn of  x
+#.  |o|o
+#. -----
+#. o|x|x
+#. -----
+#. x|x|o
+#. Turn of  o
+#. x|o|o
+#. -----
+#. o|x|x
+#. -----
+#. x|x|o
 #. Game over
-#. o  gave up
+#. .... draw ...
 #. 
 
 if __name__ == '__main__':
   board_play(be)
+
