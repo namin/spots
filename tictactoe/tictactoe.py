@@ -22,16 +22,12 @@ def board_length(board):
 ## board_length(blank * 9 * 9)
 #. 9
 
-def board_index(board, row, col, n=None):
-  n = n or board_length(board)
-
+def board_index(row, col, n):
   return row * n + col
 
 def board_get(board, row, col, n=None):
   n = n or board_length(board)
-
-  return board[board_index(
-      board, row, col, n)]
+  return board[board_index(row, col, n)]
 
 ## board_get(be, 0, 2)
 #. '-'
@@ -50,19 +46,13 @@ def box_pretty(box):
 
 def board_pretty(board, n=None):
   n = n or board_length(board)
-
-  r = []
-  for row in xrange(0, n):
-    for col in xrange(0, n):
-      if col == 0 and row != 0:
-	r.append('\n')
-	r.append('-' * (n * 2 - 1))
-	r.append('\n')
-      if col != 0:
-	r.append('|')
-      r.append(box_pretty(
-	  board_get(board, row, col)))
-  return ''.join(r)
+  width = n * 2 - 1
+  line = '\n' + '-' * width + '\n'
+  return ''.join(
+    (col == 0 and row != 0 and line or '') +
+    (col != 0 and '|' or '') +
+    box_pretty(board_get(board, row, col, n))
+    for row in xrange(n) for col in xrange(n))
 
 ## print board_pretty(be)
 #.  | | 
@@ -80,31 +70,32 @@ def board_pretty(board, n=None):
 #. o|o|x
 #. 
 
+def rows(n):
+  return [
+    [(row, col) for col in xrange(n)]
+    for row in xrange(n)]
+
+def cols(n):
+  return [
+    [(row, col) for row in xrange(n)]
+    for col in xrange(n)]
+
+def diagonals(n):
+  last = n - 1
+  return [
+    [(i, i) for i in xrange(n)],
+    [(last - i, i) for i in xrange(n)]]
+
+def lines(n):
+  return rows(n) + cols(n) + diagonals(n)
+
 def board_lines(board, n=None):
   n = n or board_length(board)
-
-  for row in xrange(0, n):
-    yield board[
-	board_index(board, row, 0, n):
-	1 + board_index(board, row, n-1, n)]
-  for col in xrange(0, n):
-    line = []
-    for row in xrange(0, n):
-      line.append(board_get(
-	  board, row, col, n))
-    yield ''.join(line)
-
-  diagonal = []
-  for i in xrange(0, n):
-    diagonal.append(board_get(
-	board, i, i, n))
-  yield ''.join(diagonal)
-
-  rev_diagonal = []
-  for i in xrange(0, n):
-    rev_diagonal.append(board_get(
-	board, n-1-i, i, n))
-  yield ''.join(rev_diagonal)
+  return (
+    ''.join([
+	board_get(board, row, col, n)
+	for (row, col) in line])
+    for line in lines(n))
 
 ## len(list(board_lines(be)))
 #. 8
@@ -112,51 +103,42 @@ def board_lines(board, n=None):
 ## (list(board_lines(bu)))
 #. ['--x', '-xo', 'oox', '--o', '-xo', 'xox', '-xx', 'oxx']
 
-def line_winning(line, n=None):
-  n = n or len(line)
+def line_winner(line):
+  first = line[0]
+  return first != blank and all(
+    first == other for other in line) and first or None
 
-  return line[0] != blank and line.count(line[0]) == n
+## print line_winner('xxx')
+#. x
+#. 
 
-## line_winning('xxx')
-#. True
-
-## line_winning('xox')
-#. False
-
-def all(vs):
-  for v in vs:
-    if not v:
-      return False
-  return True
-
-## all([True])
-#. True
-
-## all([True, False])
-#. False
+## print line_winner('xox')
+#. None
+#. 
 
 draw = '!'
 unknown = '?'
 
+def some(seq):
+  for e in seq:
+    if e:
+      return e
+  return False
+
+def board_winner(board, n=None):
+  n = n or board_length(board)
+  return some(
+    line_winner(line) for line in board_lines(board, n))
+
+def board_draw(board, n=None):
+  return all([box != '-' for box in board]) and draw
+
 def board_status(board, n=None):
   n = n or board_length(board)
-
-  winning_lines = [
-    line
-    for line in board_lines(board, n)
-    if line_winning(line, n)]
-  
-  if winning_lines != []:
-    winner = winning_lines[0][0]
-    assert all(
-      [winner == line[0]
-       for line in winning_lines])
-    return winner
-
-  if all([box != '-' for box in board]):
-    return draw
-  else:
-    return unknown
+  return (
+    board_winner(board, n) or
+    board_draw(board, n) or
+    unknown)
 
 ## board_status(be)
 #. '?'
@@ -179,10 +161,7 @@ def board_turn(board):
 
   assert cx == co or cx == co + 1
 
-  if cx == co:
-    return x
-  else:
-    return o
+  return cx == co and x or o
 
 ## board_turn(be)
 #. 'x'
@@ -219,7 +198,7 @@ def board_apply(
   turn = turn or board_turn(board)
 
   row, col = move
-  i = board_index(board, row, col, n)
+  i = board_index(row, col, n)
   new_board = [box for box in board]
   new_board[i] = turn
 
