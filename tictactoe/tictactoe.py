@@ -203,44 +203,32 @@ def snd(t):
   _, b = t
   return b
 
-def sym_switch(sym):
-  pairs, boxes = sym
-  return (
-    [(swap(box1), swap(box2)) for (box1, box2) in pairs],
-    set([swap(box) for box in boxes]))
-
 def symmetries(n):
   last = n - 1
-  sym_x = (
-    [((row1, col), (row2, col))
-    for (row1, row2) in [(i, last - i) for i in xrange(n / 2)]
-    for col in xrange(n)],
-    set([(row, col)
-	 for row in range((n + 1) / 2)
-	 for col in xrange(n)]))
 
-  sym_y = sym_switch(sym_x)
+  sym_x = [
+    ((row1, col), (row2, col))
+    for (row1, row2) in [(i, last - i) for i in xrange((n + 1)/ 2)]
+    for col in xrange(n)]
 
-  sym_d = (
-    [((row, col), (last - col, last - row))
-     for row in xrange(n - 1)
-     for col in xrange(n - row - 1)],
-    set([(row, col)
-	 for row in xrange(n)
-	 for col in xrange(n - row)]))
+  sym_y = [(swap(m1), swap(m2)) for (m1, m2) in sym_x]
+
+  sym_d = [
+    ((row, col), (last - col, last - row))
+     for row in xrange(n)
+     for col in xrange(n - row)]
 
   lower_left_triangle = [
     (row, col)
     for row in xrange(n)
     for col in xrange(row + 1)]
 
-  sym_dr = (
-    [(box, swap(box))
-     for box in lower_left_triangle
-     if fst(box) != snd(box)],
-    set(lower_left_triangle))
-     
-  return [sym_x, sym_y, sym_d, sym_dr]
+  sym_dr = [(box, swap(box)) for box in lower_left_triangle]
+
+  return [
+    ([(m1, m2) for (m1, m2) in s if m1 != m2],
+     set(m for (m, _) in s))
+    for s in [sym_x, sym_y, sym_d, sym_dr]]
 
 ## symmetries(3)
 #. [([((0, 0), (2, 0)), ((0, 1), (2, 1)), ((0, 2), (2, 2))], set([(0, 1), (1, 2), (0, 0), (1, 1), (1, 0), (0, 2)])), ([((0, 0), (0, 2)), ((1, 0), (1, 2)), ((2, 0), (2, 2))], set([(0, 1), (0, 0), (2, 1), (2, 0), (1, 0), (1, 1)])), ([((0, 0), (2, 2)), ((0, 1), (1, 2)), ((1, 0), (2, 1))], set([(0, 1), (0, 0), (1, 1), (2, 0), (1, 0), (0, 2)])), ([((1, 0), (0, 1)), ((2, 0), (0, 2)), ((2, 1), (1, 2))], set([(0, 0), (2, 1), (2, 0), (2, 2), (1, 0), (1, 1)]))]
