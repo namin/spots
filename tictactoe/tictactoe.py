@@ -303,7 +303,6 @@ def status_winning(status, turn):
 def status_loosing(status, turn):
   return status == turn_switch(turn)
 
-
 def strategy_win_or_draw(board, n=None, turn=None):
   turn = turn or board_turn(board)
 
