@@ -303,12 +303,12 @@ def status_winning(status, turn):
 def status_loosing(status, turn):
   return status == turn_switch(turn)
 
-def predict_status(substatuses, turn):
+def predict_status(substati, turn):
   return (
     turn
-    if all(status_winning(s, turn) for s in substatuses) else
+    if all(status_winning(s, turn) for s in substati) else
     turn_switch(turn)
-    if any(status_loosing(s, turn) for s in substatuses) else
+    if any(status_loosing(s, turn) for s in substati) else
     draw)
 
 def strategy_win_or_draw(board, n=None, turn=None):
@@ -358,13 +358,13 @@ def strategy_score(board, n=None, turn=None, scores=(1, 2, 4)):
     return (status, [], None)
 
   def r(turn, move, stats):
-    substatuses = [s for (s, _, _) in stats]
-    return (predict_status(substatuses, turn), substatuses, move)
+    substati = [s for (s, _, _) in stats]
+    return (predict_status(substati, turn), substati, move)
 
   stats = list(board_stats(board, b, r))
   result = [
-    (score(turn, status), avg([score(turn, s) for s in substatuses]), move)
-    for status, substatuses, move in stats]
+    (score(turn, status), avg([score(turn, s) for s in substati]), move)
+    for status, substati, move in stats]
   result.sort()
   return result[0][-1] if result != [] else None
 
@@ -472,6 +472,64 @@ def status_pretty(status, turn):
 #. -----
 #.  | | 
 #. o gave up so x wins
+#. 
+
+## board_play('----x----', strategy_score, strategy_win_or_draw)
+#.  | | 
+#. -----
+#.  |x| 
+#. -----
+#.  | | 
+#. o plays on (0, 0)
+#. o| | 
+#. -----
+#.  |x| 
+#. -----
+#.  | | 
+#. x plays on (2, 0)
+#. o| | 
+#. -----
+#.  |x| 
+#. -----
+#. x| | 
+#. o plays on (0, 2)
+#. o| |o
+#. -----
+#.  |x| 
+#. -----
+#. x| | 
+#. x plays on (0, 1)
+#. o|x|o
+#. -----
+#.  |x| 
+#. -----
+#. x| | 
+#. o plays on (2, 1)
+#. o|x|o
+#. -----
+#.  |x| 
+#. -----
+#. x|o| 
+#. x plays on (1, 2)
+#. o|x|o
+#. -----
+#.  |x|x
+#. -----
+#. x|o| 
+#. o plays on (1, 0)
+#. o|x|o
+#. -----
+#. o|x|x
+#. -----
+#. x|o| 
+#. x plays on (2, 2)
+#. o|x|o
+#. -----
+#. o|x|x
+#. -----
+#. x|o|x
+#. Game over
+#. .... draw ...
 #. 
 
 def strategy_ask(board, n=None, turn=None):
