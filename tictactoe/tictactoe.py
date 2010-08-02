@@ -39,11 +39,11 @@ def board_get(board, move, n=None):
 ## board_get(bu, (1, 2))
 #. 'o'
 
-def box_pretty(box):
-  if box == blank:
+def cell_pretty(cell):
+  if cell == blank:
     return ' '
   else:
-    return box
+    return cell
 
 def board_pretty(board, n=None):
   n = n or board_length(board)
@@ -52,7 +52,7 @@ def board_pretty(board, n=None):
   return ''.join(
     (col == 0 and row != 0 and line or '') +
     (col != 0 and '|' or '') +
-    box_pretty(board_get(board, (row, col), n))
+    cell_pretty(board_get(board, (row, col), n))
     for row in xrange(n) for col in xrange(n))
 
 ## print board_pretty(be)
@@ -132,7 +132,7 @@ def board_winner(board, n=None):
     line_winner(line) for line in board_lines(board, n))
 
 def board_draw(board, n=None):
-  return all([box != '-' for box in board]) and draw
+  return all([cell != '-' for cell in board]) and draw
 
 def board_status(board, n=None):
   n = n or board_length(board)
@@ -223,7 +223,7 @@ def symmetries(n):
     for row in xrange(n)
     for col in xrange(row + 1)]
 
-  sym_dr = [(box, swap(box)) for box in lower_left_triangle]
+  sym_dr = [(cell, swap(cell)) for cell in lower_left_triangle]
 
   return [
     ([(m1, m2) for (m1, m2) in s if m1 != m2],
@@ -236,7 +236,7 @@ def symmetries(n):
 def symmetry_try(sym, board, moves, n=None):
   n = n or board_length(board)
 
-  pairs, boxes = sym
+  pairs, cells = sym
 
   for (m1, m2) in pairs:
     v1 = board_get(board, m1, n)
@@ -244,7 +244,7 @@ def symmetry_try(sym, board, moves, n=None):
     if v1 != v2:
       return moves
 
-  return moves.intersection(boxes)
+  return moves.intersection(cells)
 
 def board_distinct_moves(board, n=None, syms=None):
   n = n or board_length(board)
@@ -279,115 +279,102 @@ def board_apply(
   turn = turn or board_turn(board)
 
   i = board_index(move, n)
-  new_board = [box for box in board]
+  new_board = [cell for cell in board]
   new_board[i] = turn
 
   return ''.join(new_board)
 
-def board_analyze(board, n=None, turn=None):
+def board_stats(board, b, r, n=None, turn=None):
   n = n or board_length(board)
   turn = turn or board_turn(board)
 
-  winning_moves = []
-  draw_moves = []
-  losing_moves = []
+  status = board_status(board, n)
+  if status != unknown:
+    yield b(turn, status)
+  else:
+    for move in board_distinct_moves(board, n):
+      new_board = board_apply(board, move, n, turn)
+      yield r(turn, move, board_stats(
+	  new_board, b, r, n, turn_switch(turn)))
 
-  for move in board_distinct_moves(board, n):
-    new_board = board_apply(
-        board, move, n, turn)
-    result = board_result(new_board, n, turn)
-    if result == turn:
-      winning_moves.append(move)
-    elif result == draw:
-      draw_moves.append(move)
-    else:
-      losing_moves.append(move)
+def status_winning(status, turn):
+  return status == turn
 
+def status_loosing(status, turn):
+  return status == turn_switch(turn)
+
+
+def strategy_win_or_draw(board, n=None, turn=None):
+  turn = turn or board_turn(board)
+
+  def b(turn, status):
+    return (status, None)
+
+  def r(turn, move, stats):
+    result = list(stats)
+    status = (
+      turn
+      if all(status_winning(s, turn) for (s, _) in result) else
+      turn_switch(turn)
+      if any(status_loosing(s, turn) for (s, _) in result) else
+      draw)
+    return (status, move)
+
+  result = list(board_stats(board, b, r))
   return (
-    winning_moves, draw_moves, losing_moves)
-      
-def board_result(board, n=None, turn=None):
+    some(move for (status, move) in result if status_winning(status, turn)) or
+    some(move for (status, move) in result
+         if not status_loosing(status, turn)) or
+    None)
+
+## strategy_win_or_draw(bu)
+#. (0, 0)
+
+## strategy_win_or_draw('---ox----')
+#. (0, 1)
+
+## strategy_win_or_draw('xx-oxoo--')
+#. (0, 2)
+
+## strategy_win_or_draw('----x----')
+#. (0, 0)
+
+def board_play(board, strategy_turn, strategy_other, n=None, turn=None):
   n = n or board_length(board)
   turn = turn or board_turn(board)
 
-  result = board_status(board, n)
-  if result != unknown:
-    return result
+  print board_pretty(board, n)
 
-  other_turn = turn_switch(turn)
-  result, _ = board_suggest(
-    board, n, other_turn)
-
-  return result
-
-## board_analyze(bd)
-#. ([], [], [])
-
-## board_analyze(bx)
-#. ([], [], [(1, 2), (2, 1)])
-
-## board_analyze(bu)
-#. ([(0, 0)], [(0, 1), (1, 0)], [])
-
-## board_analyze(bo)
-#. ([], [(0, 0)], [(0, 1), (1, 0), (2, 1)])
-
-def board_suggest(board, n=None, turn=None):
-  n = n or board_length(board)
-  turn = turn or board_turn(board)
-
-  draw_result = (None, None)
-  for move in board_distinct_moves(board, n):
-    new_board = board_apply(
-        board, move, n, turn)
-    result = board_result(new_board, n, turn)
-    if result == turn:
-      return (result, move)
-    elif result == draw:
-      draw_result = (result, move)
-
-  return draw_result
-
-## board_suggest(bu)
-#. ('x', (0, 0))
-
-## board_suggest('---ox----')
-#. ('!', (0, 0))
-
-def board_play(board, n=None, turn=None):
-  n = n or board_length(board)
-  turn = turn or board_turn(board)
-
-  move = True
-  while move:
-    print 'Turn of ', turn
-    print board_pretty(board, n)
-
-    _, move = board_suggest(board, n, turn)
+  status = board_status(board, n)
+  if status == unknown:
+    move = strategy_turn(board, n, turn)
+    other_turn = turn_switch(turn)
     if move:
-      board = board_apply(
-	board, move, n, turn)
-      turn = turn_switch(turn)
-  
-  print 'Game over'
-  print status_pretty(board_status(board, n), turn)
+      print turn, 'plays on', move
+      board_play(
+	board_apply(board, move, n, turn),
+	strategy_other, strategy_turn,
+	n, other_turn)
+    else:
+      print turn, 'gave up so', other_turn, 'wins'
+  else:
+    print 'Game over'
+    print status_pretty(board_status(board, n), turn)
 
 def status_pretty(status, turn):
-  if status == unknown:
-    return turn + ' gave up'
-  elif status == draw:
+  assert status != unknown
+  if status == draw:
     return '.... draw ...'
   else:
     return status + ' won'
 
-## board_play(bu)
-#. Turn of  x
+## board_play(bu, strategy_win_or_draw, strategy_win_or_draw)
 #.  | |x
 #. -----
 #.  |x|o
 #. -----
 #. o|o|x
-#. Turn of  o
+#. x plays on (0, 0)
 #. x| |x
 #. -----
 #.  |x|o
@@ -397,32 +384,31 @@ def status_pretty(status, turn):
 #. x won
 #. 
 
-## board_play(bo)
-#. Turn of  o
+## board_play(bo, strategy_win_or_draw, strategy_win_or_draw)
 #.  | |x
 #. -----
 #.  |x|o
 #. -----
 #. o| |x
-#. Turn of  x
+#. o plays on (0, 0)
 #. o| |x
 #. -----
 #.  |x|o
 #. -----
 #. o| |x
-#. Turn of  o
+#. x plays on (1, 0)
 #. o| |x
 #. -----
 #. x|x|o
 #. -----
 #. o| |x
-#. Turn of  x
+#. o plays on (0, 1)
 #. o|o|x
 #. -----
 #. x|x|o
 #. -----
 #. o| |x
-#. Turn of  o
+#. x plays on (2, 1)
 #. o|o|x
 #. -----
 #. x|x|o
@@ -432,69 +418,27 @@ def status_pretty(status, turn):
 #. .... draw ...
 #. 
 
-## board_play('---ox----')
-#. Turn of  x
+## board_play('---ox----', strategy_win_or_draw, strategy_win_or_draw)
 #.  | | 
 #. -----
 #. o|x| 
 #. -----
 #.  | | 
-#. Turn of  o
-#. x| | 
+#. x plays on (0, 1)
+#.  |x| 
 #. -----
 #. o|x| 
 #. -----
 #.  | | 
-#. Turn of  x
-#. x| | 
-#. -----
-#. o|x| 
-#. -----
-#.  | |o
-#. Turn of  o
-#. x| | 
-#. -----
-#. o|x| 
-#. -----
-#. x| |o
-#. Turn of  x
-#. x| |o
-#. -----
-#. o|x| 
-#. -----
-#. x| |o
-#. Turn of  o
-#. x| |o
-#. -----
-#. o|x|x
-#. -----
-#. x| |o
-#. Turn of  x
-#. x|o|o
-#. -----
-#. o|x|x
-#. -----
-#. x| |o
-#. Turn of  o
-#. x|o|o
-#. -----
-#. o|x|x
-#. -----
-#. x|x|o
-#. Game over
-#. .... draw ...
+#. o gave up so x wins
 #. 
 
-def interactive_game(n=3, board=None, turn=None):
-  board = board or (blank * n * n)
+def strategy_ask(board, n=None, turn=None):
   turn = turn or board_turn(board)
 
-  print board_pretty(board)
-
   row, col = None, None
-
   while row == None or col == None:
-    move = input('Your turn: ')
+    move = input('Play for ' + turn + ': ')
     try:
       row, col = move
     except ValueError:
@@ -505,45 +449,29 @@ def interactive_game(n=3, board=None, turn=None):
     if col >= n:
       col = None
       print 'Invalid column', col
-    v = board_get(board, row, col, n)
+    v = board_get(board, (row, col), n)
     if v != blank:
       row, col = None, None
-      print 'Box already taken by', v
+      print 'Cell already taken by', v
 
-  board = board_apply(board, move, n, x)
-  status = board_status(board, n)
+  return (row, col)
 
-  print 'You played', turn, 'on', move
-  print board_pretty(board)
-
-  if status != unknown:
-    print 'Game over'
-    print status_pretty(status, turn)
-    return
-
-  other_turn = turn_switch(turn)
-
-  _, move = board_suggest(
-    board, n, other_turn)
-
-  if move == None:
-    print 'Game over'
-    print status_pretty(unknown, other_turn)
-    return
-
-  board = board_apply(
-    board, move, n, other_turn)
-  print other_turn, 'played on', move
-
-  status = board_status(board, n)
-  if status != unknown:
-    print board_pretty(board)
-    print 'Game over'
-    print status_pretty(status, other_turn)
-    return
+def interactive(strategy_computer=strategy_win_or_draw, user_first=None):
+  if user_first is None:
+    input_first = raw_input('Do you want to play first (y/n)? ')
+    user_first = not (input_first != "" and input_first[0].lower() == 'n')
+    if user_first:
+      print 'Yes.'
+    else:
+      print 'No.'
   
-  interactive_game(3, board, turn)
+  strategy_turn, strategy_other = (
+    (strategy_ask, strategy_computer)
+    if user_first else
+    (strategy_computer, strategy_ask))
+
+  board_play(be, strategy_turn, strategy_other)
 
 if __name__ == '__main__':
-  interactive_game()
+  interactive()
 
