@@ -23,20 +23,20 @@ def board_length(board):
 ## board_length(blank * 9 * 9)
 #. 9
 
-def board_index(row, col, n):
+def board_index((row, col), n):
   return row * n + col
 
-def board_get(board, row, col, n=None):
+def board_get(board, move, n=None):
   n = n or board_length(board)
-  return board[board_index(row, col, n)]
+  return board[board_index(move, n)]
 
-## board_get(be, 0, 2)
+## board_get(be, (0, 2))
 #. '-'
 
-## board_get(bu, 0, 2)
+## board_get(bu, (0, 2))
 #. 'x'
   
-## board_get(bu, 1, 2)
+## board_get(bu, (1, 2))
 #. 'o'
 
 def box_pretty(box):
@@ -52,7 +52,7 @@ def board_pretty(board, n=None):
   return ''.join(
     (col == 0 and row != 0 and line or '') +
     (col != 0 and '|' or '') +
-    box_pretty(board_get(board, row, col, n))
+    box_pretty(board_get(board, (row, col), n))
     for row in xrange(n) for col in xrange(n))
 
 ## print board_pretty(be)
@@ -94,8 +94,8 @@ def board_lines(board, n=None):
   n = n or board_length(board)
   return (
     ''.join([
-	board_get(board, row, col, n)
-	for (row, col) in line])
+	board_get(board, move, n)
+	for  move in line])
     for line in lines(n))
 
 ## len(list(board_lines(be)))
@@ -180,7 +180,7 @@ def board_moves(board, n=None):
     (row, col)
     for row in xrange(n)
     for col in xrange(n)
-    if board_get(board, row, col, n) == blank)
+    if board_get(board, (row, col), n) == blank)
 
 ## list(board_moves(be))
 #. [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
@@ -238,9 +238,9 @@ def symmetry_try(sym, board, moves, n=None):
 
   pairs, boxes = sym
 
-  for ((r1, c1), (r2, c2)) in pairs:
-    v1 = board_get(board, r1, c1, n)
-    v2 = board_get(board, r2, c2, n)
+  for (m1, m2) in pairs:
+    v1 = board_get(board, m1, n)
+    v2 = board_get(board, m2, n)
     if v1 != v2:
       return moves
 
@@ -278,8 +278,7 @@ def board_apply(
   n = n or board_length(board)
   turn = turn or board_turn(board)
 
-  row, col = move
-  i = board_index(row, col, n)
+  i = board_index(move, n)
   new_board = [box for box in board]
   new_board[i] = turn
 
