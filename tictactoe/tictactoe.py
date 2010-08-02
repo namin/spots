@@ -303,6 +303,14 @@ def status_winning(status, turn):
 def status_loosing(status, turn):
   return status == turn_switch(turn)
 
+def predict_status(substatuses, turn):
+  return (
+    turn
+    if all(status_winning(s, turn) for s in substatuses) else
+    turn_switch(turn)
+    if any(status_loosing(s, turn) for s in substatuses) else
+    draw)
+
 def strategy_win_or_draw(board, n=None, turn=None):
   turn = turn or board_turn(board)
 
@@ -310,18 +318,12 @@ def strategy_win_or_draw(board, n=None, turn=None):
     return (status, None)
 
   def r(turn, move, stats):
-    result = list(stats)
-    status = (
-      turn
-      if all(status_winning(s, turn) for (s, _) in result) else
-      turn_switch(turn)
-      if any(status_loosing(s, turn) for (s, _) in result) else
-      draw)
-    return (status, move)
+    return (predict_status([s for (s, _) in stats], turn), move)
 
   result = list(board_stats(board, b, r))
   return (
-    some(move for (status, move) in result if status_winning(status, turn)) or
+    some(move for (status, move) in result
+	 if status_winning(status, turn)) or
     some(move for (status, move) in result
          if not status_loosing(status, turn)) or
     None)
@@ -336,6 +338,46 @@ def strategy_win_or_draw(board, n=None, turn=None):
 #. (0, 2)
 
 ## strategy_win_or_draw('----x----')
+#. (0, 0)
+
+def avg(lst):
+  return sum(lst) / 1.0 * len(lst) if lst != [] else 0
+
+def strategy_score(board, n=None, turn=None, scores=(1, 2, 4)):
+  turn = turn or board_turn(board)
+
+  winning_score, draw_score, loosing_score = scores
+
+  def score(turn, status):
+    return (
+      winning_score if status_winning(status, turn) else
+      draw_score if not status_loosing(status, turn) else
+      loosing_score)
+
+  def b(turn, status):
+    return (status, [], None)
+
+  def r(turn, move, stats):
+    substatuses = [s for (s, _, _) in stats]
+    return (predict_status(substatuses, turn), substatuses, move)
+
+  stats = list(board_stats(board, b, r))
+  result = [
+    (score(turn, status), avg([score(turn, s) for s in substatuses]), move)
+    for status, substatuses, move in stats]
+  result.sort()
+  return result[0][-1] if result != [] else None
+
+## strategy_score(bu)
+#. (0, 0)
+
+## strategy_score('---ox----')
+#. (0, 0)
+
+## strategy_score('xx-oxoo--')
+#. (0, 2)
+
+## strategy_score('----x----')
 #. (0, 0)
 
 def board_play(board, strategy_turn, strategy_other, n=None, turn=None):
@@ -455,7 +497,7 @@ def strategy_ask(board, n=None, turn=None):
 
   return (row, col)
 
-def interactive(strategy_computer=strategy_win_or_draw, user_first=None):
+def interactive(strategy_computer=strategy_score, user_first=None):
   if user_first is None:
     input_first = raw_input('Do you want to play first (y/n)? ')
     user_first = not (input_first != "" and input_first[0].lower() == 'n')
