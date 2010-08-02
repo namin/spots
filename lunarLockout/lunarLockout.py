@@ -7,7 +7,7 @@ def moves(board):
     def vertically(piece):
         (x, y) = piece
         return (y, x)
-    def moving(from_piece, near_piece, t):
+    def moving(t, from_piece, near_piece):
         (a, b) = t(from_piece)
         (c, d) = t(near_piece)
         pieces_in_between = (
@@ -18,9 +18,9 @@ def moves(board):
             yield from_piece, t((a, d + (1 if b > d else -1)))
     for from_piece in board:
         for near_piece in board:
-            for move in moving(from_piece, near_piece, horizontally):
+            for move in moving(horizontally, from_piece, near_piece):
                 yield move
-            for move in moving(from_piece, near_piece, vertically):
+            for move in moving(vertically, from_piece, near_piece):
                 yield move
 
 ## [m for m in moves(ex_board)]
