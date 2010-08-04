@@ -40,18 +40,15 @@ def board_get(board, move, n=None):
 #. 'o'
 
 def cell_pretty(cell):
-  if cell == blank:
-    return ' '
-  else:
-    return cell
+  return cell if cell != blank else ' '
 
 def board_pretty(board, n=None):
   n = n or board_length(board)
   width = n * 2 - 1
   line = '\n' + '-' * width + '\n'
   return ''.join(
-    (col == 0 and row != 0 and line or '') +
-    (col != 0 and '|' or '') +
+    (line if col == 0 and row != 0 else '') +
+    ('|' if col != 0 else '') +
     cell_pretty(board_get(board, (row, col), n))
     for row in xrange(n) for col in xrange(n))
 
@@ -106,8 +103,8 @@ def board_lines(board, n=None):
 
 def line_winner(line):
   first = line[0]
-  return first != blank and all(
-    first == other for other in line) and first or None
+  return first if first != blank and all(
+    first == other for other in line) else None
 
 ## print line_winner('xxx')
 #. x
@@ -162,7 +159,7 @@ def board_turn(board):
 
   assert cx == co or cx == co + 1
 
-  return cx == co and x or o
+  return x if cx == co else o
 
 ## board_turn(be)
 #. 'x'
