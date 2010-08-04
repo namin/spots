@@ -1,3 +1,5 @@
+# yuck!
+
 import math
 
 blank = '-'
@@ -35,7 +37,7 @@ def board_get(board, move, n=None):
 
 ## board_get(bu, (0, 2))
 #. 'x'
-  
+
 ## board_get(bu, (1, 2))
 #. 'o'
 
@@ -91,8 +93,8 @@ def board_lines(board, n=None):
   n = n or board_length(board)
   return (
     ''.join([
-	board_get(board, move, n)
-	for  move in line])
+        board_get(board, move, n)
+        for  move in line])
     for line in lines(n))
 
 ## len(list(board_lines(be)))
@@ -292,7 +294,7 @@ def board_stats(board, b, r, n=None, turn=None):
     for move in board_distinct_moves(board, n):
       new_board = board_apply(board, move, n, turn)
       yield r(turn, move, board_stats(
-	  new_board, b, r, n, turn_switch(turn)))
+          new_board, b, r, n, turn_switch(turn)))
 
 def status_winning(status, turn):
   return status == turn
@@ -320,7 +322,7 @@ def strategy_win_or_draw(board, n=None, turn=None):
   result = list(board_stats(board, b, r))
   return (
     some(move for (status, move) in result
-	 if status_winning(status, turn)) or
+         if status_winning(status, turn)) or
     some(move for (status, move) in result
          if not status_loosing(status, turn)) or
     None)
@@ -392,9 +394,9 @@ def board_play(board, strategy_turn, strategy_other, n=None, turn=None):
     if move:
       print turn, 'plays on', move
       board_play(
-	board_apply(board, move, n, turn),
-	strategy_other, strategy_turn,
-	n, other_turn)
+          board_apply(board, move, n, turn),
+          strategy_other, strategy_turn,
+          n, other_turn)
     else:
       print turn, 'gave up so', other_turn, 'wins'
   else:
@@ -562,7 +564,7 @@ def interactive(strategy_computer=strategy_score, user_first=None):
       print 'Yes.'
     else:
       print 'No.'
-  
+
   strategy_turn, strategy_other = (
     (strategy_ask, strategy_computer)
     if user_first else
@@ -572,4 +574,3 @@ def interactive(strategy_computer=strategy_score, user_first=None):
 
 if __name__ == '__main__':
   interactive()
-
