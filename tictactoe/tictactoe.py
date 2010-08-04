@@ -359,11 +359,13 @@ def strategy_score(board, n=None, turn=None, scores=(1, 2, 4)):
     return (predict_status(substati, turn), substati, move)
 
   stats = list(board_stats(board, b, r))
-  result = [
+  if stats == []:
+    return None
+
+  _, _, move = min((
     (score(turn, status), avg([score(turn, s) for s in substati]), move)
-    for status, substati, move in stats]
-  result.sort()
-  return result[0][-1] if result != [] else None
+    for status, substati, move in stats))
+  return move
 
 ## strategy_score(bu)
 #. (0, 0)
