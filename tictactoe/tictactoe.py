@@ -362,9 +362,9 @@ def strategy_score(board, n=None, turn=None, scores=(1, 2, 4)):
   if stats == []:
     return None
 
-  _, _, move = min((
+  _, _, move = min(
     (score(turn, status), avg([score(turn, s) for s in substati]), move)
-    for status, substati, move in stats))
+    for status, substati, move in stats)
   return move
 
 ## strategy_score(bu)
