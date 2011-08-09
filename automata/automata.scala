@@ -13,7 +13,7 @@ object automata {
       if (index == input.length) 
 	finals.contains(state)
       else
-	map.get(state).get.get(input(index)) match {
+	map.get(state).flatMap(_.get(input(index))) match {
 	  case None => false
 	  case Some(new_state) => next(new_state, index + 1)
 	}
