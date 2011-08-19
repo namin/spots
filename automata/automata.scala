@@ -59,12 +59,19 @@ object automata {
       ch << InvokeVirtual("java/lang/String", "length", "()I")
       ch << ILoad(index)
       ch << If_ICmpEq(if (finals.contains(state)) accept else reject)
+      var inputChar : Option[Int] = None
       for ((char, new_state) <- table) {
-	ch << ALoad(input) << ILoad(index)
-	ch << InvokeVirtual("java/lang/String", "charAt", "(I)C")
+	if (inputChar == None) {
+	  inputChar = Some(ch.getFreshVar)
+	  ch << ALoad(input) << ILoad(index)
+	  ch << InvokeVirtual("java/lang/String", "charAt", "(I)C")
+	  ch << IStore(inputChar.get)
+	}
+	ch << ILoad(inputChar.get)
 	ch << Ldc(char)
 	ch << If_ICmpEq(new_state + inc)
       }
+      inputChar.foreach(ch.freeVar(_))
       ch << Goto(reject)
     }
 
