@@ -1,8 +1,15 @@
 object automata {
   type Automaton = (String, Set[String], Map[String, Map[Char, String]])
 
-  val cadr_automaton = ("init", Set("end"), Map(
+  val cadr = ("init", Set("end"), Map(
     "init" -> Map('c' -> "more"),
+    "more" -> Map('a' -> "more", 'd' -> "more", 'r' -> "end"),
+    "end" -> Map[Char, String]()
+  ))
+
+  val c_ad_r = ("init", Set("end"), Map(
+    "init" -> Map('c' -> "req"),
+    "req" -> Map('a' -> "more", 'd' -> "more"),
     "more" -> Map('a' -> "more", 'd' -> "more", 'r' -> "end"),
     "end" -> Map[Char, String]()
   ))
