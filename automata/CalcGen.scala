@@ -21,7 +21,6 @@ object CalcGen {
     ch << InvokeVirtual("java/io/Console", "readLine", "()Ljava/lang/String;")
     ch << DUP << IfNull(end)
 
-    ch << DUP
     ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
     ch << DUP
     ch << Ldc("... ")
@@ -31,6 +30,7 @@ object CalcGen {
     ch << Goto(top)
 
     ch << Label(end)
+    ch << POP
     ch << ILoad(stack)
     ch << IfEq(done)
     ch << POP
