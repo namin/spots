@@ -19,7 +19,8 @@ object CalcGen {
     ch << DUP
     ch << Ldc("... ")
     ch << InvokeVirtual("java/io/PrintStream", "print", "(Ljava/lang/String;)V")
-    ch << InvokeVirtual("java/io/PrintStream", "println", "(I)V")
+    ch << SWAP
+    ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
 
     ch << Goto(top)
 
