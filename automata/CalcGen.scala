@@ -7,16 +7,10 @@ object CalcGen {
     val classFile = new ClassFile("Calc", None)
     val ch = classFile.addMainMethod.codeHandler
 
-    val stack = ch.getFreshVar
     val top = ch.getFreshLabel("top")
     val end = ch.getFreshLabel("end")
-    val done = ch.getFreshLabel("done")
-
-    ch << Ldc(0)
-    ch << IStore(stack)
 
     ch << Label(top)
-    ch << ILoad(stack) << Ldc(1) << IADD << IStore(stack)
     ch << InvokeStatic("java/lang/System", "console", "()Ljava/io/Console;")
     ch << InvokeVirtual("java/io/Console", "readLine", "()Ljava/lang/String;")
     ch << DUP << IfNull(end)
@@ -31,13 +25,6 @@ object CalcGen {
 
     ch << Label(end)
     ch << POP
-    ch << ILoad(stack)
-    ch << IfEq(done)
-    ch << POP
-    ch << ILoad(stack) << Ldc(1) << ISUB << IStore(stack)
-    ch << Goto(end)
-
-    ch << Label(done)
     ch << RETURN
     ch.freeze
     classFile.writeToFile(classFile.className + ".class")
