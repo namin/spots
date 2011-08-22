@@ -36,7 +36,7 @@ object automata {
   def compile(className: String, automaton: Automaton): Unit = {
     val classFile = new ClassFile(className, None)
 
-    // Compiles a main metod which repeatedly prompt for an input,
+    // Compiles a main metod which repeatedly prompts for an input,
     // printing whether it is accepted by the compiled automaton.
     def compileMain(): Unit = {
       val ch = classFile.addMainMethod.codeHandler
