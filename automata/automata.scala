@@ -32,62 +32,93 @@ object automata {
   import AbstractByteCodes._
   import ByteCodes._
 
-  // Creates a JVM program which prints true or false according to
-  // whether its first argument is recognized by the given automaton
   def compile(className: String, automaton: Automaton): Unit = {
     val classFile = new ClassFile(className, None)
-    val ch = classFile.addMainMethod.codeHandler
-    val input = ch.getFreshVar
-    val index = ch.getFreshVar
-    ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
-    ch << ALoad(0)
-    ch << Ldc(0)
-    ch << AALOAD
-    ch << AStore(input)
-    ch << Ldc(0)
-    ch << IStore(index)
 
-    val (init, finals, map) = automaton
-    ch << Goto(init)
+    // Compiles a main metod which repeatedly prompt for an input,
+    // printing whether it is accepted by the compiled automaton.
+    def compileMain(): Unit = {
+      val ch = classFile.addMainMethod.codeHandler
 
-    val reject = ch.getFreshLabel("reject")
-    val accept = ch.getFreshLabel("accept")
-    val done = ch.getFreshLabel("done")
-    val inc = "##inc"
+      val top = ch.getFreshLabel("top")
+      val end = ch.getFreshLabel("end")
 
-    ch << Label(reject) << Ldc(0) << Goto(done)
-    ch << Label(accept) << Ldc(1) << Goto(done)
+      ch << Label(top)
 
-    for ((state, table) <- map) {
-      ch << Label(state + inc)
-      ch << ILoad(index) << Ldc(1) << IADD << IStore(index)
-      ch << Label(state)
-      ch << ALoad(input)
-      ch << InvokeVirtual("java/lang/String", "length", "()I")
-      ch << ILoad(index)
-      ch << If_ICmpEq(if (finals.contains(state)) accept else reject)
-      val inputChar = if (table.size == 0) None else {
-	ch << ALoad(input) << ILoad(index)
-	ch << InvokeVirtual("java/lang/String", "charAt", "(I)C")
-	if (table.size == 1) None else {
-	  val tempVar = ch.getFreshVar
-	  ch << IStore(tempVar)
-	  Some(tempVar)
-	}
-      }
-      for ((char, new_state) <- table) {
-	inputChar.foreach(ch << ILoad(_))
-	ch << Ldc(char)
-	ch << If_ICmpEq(new_state + inc)
-      }
-      inputChar.foreach(ch.freeVar(_))
-      ch << Goto(reject)
+      ch << InvokeStatic("java/lang/System", "console", "()Ljava/io/Console;")
+      ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
+      ch << Ldc(">> ")
+      ch << InvokeVirtual("java/io/PrintStream", "print", "(Ljava/lang/String;)V")
+      ch << InvokeVirtual("java/io/Console", "readLine", "()Ljava/lang/String;")
+      ch << DUP << IfNull(end)
+
+      ch << InvokeStatic(className, "eval", "(Ljava/lang/String;)Z")
+      ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
+      ch << SWAP
+      ch << InvokeVirtual("java/io/PrintStream", "println", "(Z)V")
+      
+      ch << Goto(top)
+
+      ch << Label(end)
+      ch << POP
+      ch << RETURN
+      ch.freeze
     }
+    compileMain()
 
-    ch << Label(done)
-    ch << InvokeVirtual("java/io/PrintStream", "println", "(Z)V")
-    ch << RETURN
-    ch.freeze
+    // Compiles a static method which takes an input and returns
+    // whether it is accepted by the compiled automaton.
+    def compileEval(): Unit = {
+      val mh = classFile.addMethod("Z", "eval", "Ljava/lang/String;")
+      mh.setFlags(Flags.METHOD_ACC_STATIC)
+      val ch = mh.codeHandler
+
+      val input = 0
+      val index = ch.getFreshVar
+      ch << Ldc(0)
+      ch << IStore(index)
+
+      val (init, finals, map) = automaton
+
+      val start = ch.getFreshLabel("start")
+      val reject = ch.getFreshLabel("reject")
+      val accept = ch.getFreshLabel("accept")
+
+      ch << Goto(start)
+
+      ch << Label(reject) << Ldc(0) << IRETURN
+      ch << Label(accept) << Ldc(1) << IRETURN
+
+      for ((state, table) <- map) {
+	ch << Label(state)
+	ch << ILoad(index) << Ldc(1) << IADD << IStore(index)
+	if (state == init) ch << Label(start)
+	ch << ALoad(input)
+	ch << InvokeVirtual("java/lang/String", "length", "()I")
+	ch << ILoad(index)
+	ch << If_ICmpEq(if (finals.contains(state)) accept else reject)
+	val inputChar = if (table.size == 0) None else {
+	  ch << ALoad(input) << ILoad(index)
+	  ch << InvokeVirtual("java/lang/String", "charAt", "(I)C")
+	  if (table.size == 1) None else {
+	    val tempVar = ch.getFreshVar
+	    ch << IStore(tempVar)
+	    Some(tempVar)
+	  }
+	}
+	for ((char, new_state) <- table) {
+	  inputChar.foreach(ch << ILoad(_))
+	  ch << Ldc(char)
+	  ch << If_ICmpEq(new_state)
+	}
+	inputChar.foreach(ch.freeVar(_))
+	ch << Goto(reject)
+      }
+
+      ch.freeze
+    }
+    compileEval()
+    
     classFile.writeToFile(className + ".class")
   }
 }
