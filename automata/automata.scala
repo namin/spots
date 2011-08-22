@@ -32,6 +32,7 @@ object automata {
   import AbstractByteCodes._
   import ByteCodes._
 
+  // Compiles the given automaton to a JVM program.
   def compile(className: String, automaton: Automaton): Unit = {
     val classFile = new ClassFile(className, None)
 
