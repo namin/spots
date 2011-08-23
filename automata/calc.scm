@@ -10,6 +10,8 @@
       acc
       (factiter (* acc n) (- n 1))))
 
+(define (fact n) (factiter 1 n))
+
 (define (fib n)
   (if (< n 2)
       1
