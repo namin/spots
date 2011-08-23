@@ -1,10 +1,11 @@
 import java.io.Console;
+import java.math.BigInteger;
 import java.util.Stack;
 
 
 /** Base class used by the generated Calc. **/
 public abstract class CalcBase {
-    public Stack<Integer> stack = new Stack<Integer>();
+    public Stack<BigInteger> stack = new Stack<BigInteger>();
 
     public abstract boolean dispatch(String op);
 
@@ -17,7 +18,7 @@ public abstract class CalcBase {
 	    input = input.trim();
 	    boolean printTop = true;
 	    try {
-		stack.push(Integer.valueOf(input));
+		stack.push(new BigInteger(input));
 	    } catch (NumberFormatException e) {
 		printTop = dispatch(input);
 	    }

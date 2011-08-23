@@ -3,6 +3,9 @@ object CalcGen {
   val className = "Calc"
   var errors = 0
 
+  val intClass = "java/math/BigInteger"
+  val intType = "L" + intClass + ";"
+
   import cafebabe._
   import AbstractByteCodes._
   import ByteCodes._
@@ -13,29 +16,37 @@ object CalcGen {
     def invoke(ch: CodeHandler): Unit
   }
 
+  case class I(val n: String)
+
   case class DefFun(override val name: String, val params: List[String], val source: Any) extends Fun {
     override val numParams = params.size
 
     def compile(classFile: ClassFile, funmap: Map[String, Fun]): Unit = {
       println("Compiling " + name)
 
-      val mh = classFile.addMethod("I", name, "I" * numParams)
+      val mh = classFile.addMethod(intType, name, intType * numParams)
       mh.setFlags(Flags.METHOD_ACC_STATIC)
       val ch = mh.codeHandler
       val top = "_top_"
 
       def c(last: Boolean)(code: Any): Unit = {
 	code match {
-	  case n: Int => ch << Ldc(n)
+	  case I(n) => {
+	    ch << JustNew(intClass)
+	    ch << Ldc(n)
+	    ch << InvokeSpecial(intClass, "<init>", "(Ljava/lang/String;)V")
+	  }
 	  case v: String => params.indexOf(v) match {
 	    case -1 => { errors += 1; println("Error: undefined variable " + v) }
-	    case i => ch << ILoad(i)
+	    case i => ch << ALoad(i)
 	  }
 	  case List("if", cond, cons, alt) => {
 	    c(false)(cond)
 	    val if_true = ch.getFreshLabel("if_true")
 	    val end = ch.getFreshLabel("end")
-	    ch << IfNe(if_true)
+	    ch << GetStatic(intClass, "ZERO", intType)
+	    ch << InvokeVirtual(intClass, "equals", "(Ljava/lang/Object;)Z")
+	    ch << IfEq(if_true)
 	    c(last)(alt)
 	    ch << Goto(end)
 	    ch << Label(if_true)
@@ -51,7 +62,7 @@ object CalcGen {
 		fun.invoke(ch)		
 	      } else {
 		for (i <- (0 until numParams).reverse)
-		  ch << IStore(i)
+		  ch << AStore(i)
 		ch << Goto(top)
 	      }
 	    }
@@ -61,43 +72,47 @@ object CalcGen {
       }
       ch << Label(top)
       c(true)(source)
-      ch << IRETURN
+      ch << ARETURN
       if (errors == 0) ch.freeze
     }
 
     def invoke(ch: CodeHandler): Unit = {
-      ch << InvokeStatic(className, name, "(" + "I" * numParams + ")I")
+      ch << InvokeStatic(className, name, "(" + intType * numParams + ")" + intType)
     }
   }
 
   abstract case class PrimitiveFun(override val name: String, override val numParams: Int) extends Fun
 
   object PrimitiveAdd extends PrimitiveFun("+", 2) {
-    override def invoke(ch: CodeHandler): Unit = ch << IADD
+    override def invoke(ch: CodeHandler): Unit =
+      ch << InvokeVirtual(intClass, "add", "(" + intType + ")" + intType)
   }
 
   object PrimitiveSub extends PrimitiveFun("-", 2) {
-    override def invoke(ch: CodeHandler): Unit = ch << ISUB
+    override def invoke(ch: CodeHandler): Unit =
+      ch << InvokeVirtual(intClass, "subtract", "(" + intType + ")" + intType)
   }
 
   object PrimitiveMul extends PrimitiveFun("*", 2) {
-    override def invoke(ch: CodeHandler): Unit = ch << IMUL
+    override def invoke(ch: CodeHandler): Unit =
+      ch << InvokeVirtual(intClass, "multiply", "(" + intType + ")" + intType)
   }
 
   abstract class PrimitiveCmp(override val name: String, override val numParams: Int, val cmp: (String) => ControlOperator) extends PrimitiveFun(name, numParams) {
     override def invoke(ch: CodeHandler): Unit = {
+      ch << InvokeVirtual(intClass, "compareTo", "(" + intType + ")I")
       val if_true = ch.getFreshLabel("if_true")
       val end = ch.getFreshLabel("end")
       ch << cmp(if_true)
-      ch << Ldc(0) << Goto(end)
-      ch << Label(if_true) << Ldc(1)
+      ch << GetStatic(intClass, "ZERO", intType) << Goto(end)
+      ch << Label(if_true) << GetStatic(intClass, "ONE", intType)
       ch << Label(end)
     }
   }
 
-  object PrimitiveLt extends PrimitiveCmp("<", 2, If_ICmpLt(_))
+  object PrimitiveLt extends PrimitiveCmp("<", 2, IfLt(_))
 
-  object PrimitiveEq extends PrimitiveCmp("=", 2, If_ICmpEq(_))
+  object PrimitiveEq extends PrimitiveCmp("=", 2, IfEq(_))
 
   val primitives = List(PrimitiveAdd, PrimitiveSub, PrimitiveMul, PrimitiveLt, PrimitiveEq)
 
@@ -106,7 +121,7 @@ object CalcGen {
   object parser extends JavaTokenParsers {
     private def s = """\s*""".r
     private def atom: Parser[String] = """[^\(\)\s]+""".r
-    private def number: Parser[Int]  = wholeNumber ^^ { _.toInt }
+    private def number: Parser[I]  = wholeNumber ^^ { I(_) }
     private def list: Parser[List[Any]] = 
       '(' ~>s~> rep(expr) <~ ')' <~s
     private def expr: Parser[Any] =
@@ -172,8 +187,7 @@ object CalcGen {
 	  ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
 	  ch << ILoad(index)
 	  ch << InvokeVirtual("java/util/Stack", "remove", "(I)Ljava/lang/Object;")
-	  ch << CheckCast("java/lang/Integer")
-	  ch << InvokeVirtual("java/lang/Integer", "intValue", "()I")
+	  ch << CheckCast(intClass)
 	})
 	ch.freeVar(index)
 	fun.invoke(ch)
@@ -189,7 +203,6 @@ object CalcGen {
       ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
       ch << Ldc(0) << IRETURN
       ch << Label(push)
-      ch << InvokeStatic("java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;")
       ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
       ch << SWAP
       ch << InvokeVirtual("java/util/Stack", "addElement", "(Ljava/lang/Object;)V")

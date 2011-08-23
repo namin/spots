@@ -1,3 +1,5 @@
+(define (c) 123)
+
 (define (sub a b) (- a b))
 
 (define (factorial n)
@@ -21,5 +23,3 @@
   (if (= n 0)
       b
       (fibiter b (+ a b) (- n 1))))
-
-(define (c) 123)
