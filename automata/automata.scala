@@ -41,8 +41,8 @@ object automata {
     def compileMain(): Unit = {
       val ch = classFile.addMainMethod.codeHandler
 
-      val top = ch.getFreshLabel("top")
-      val end = ch.getFreshLabel("end")
+      val top = "_top_"
+      val end = "_end_"
 
       ch << Label(top)
 
@@ -81,9 +81,9 @@ object automata {
 
       val (init, finals, map) = automaton
 
-      val start = ch.getFreshLabel("start")
-      val reject = ch.getFreshLabel("reject")
-      val accept = ch.getFreshLabel("accept")
+      val start = "_start_"
+      val reject = "_reject_"
+      val accept = "_accept_"
 
       ch << Goto(start)
 
