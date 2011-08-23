@@ -201,6 +201,8 @@ object CalcGen {
   }
 
   def main(args: Array[String]) {
+    errors = 0
+
     val defs = args.flatMap(parser.parseDefinitions(_))
 
     val funmap = Map() ++ ((primitives ++ defs).map(f => (f.name, f)))
