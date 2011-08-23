@@ -214,8 +214,8 @@ object CalcGen {
 	ch << Label(next)
       }
 
-      ch << Ldc("!!! undefined operation") << Goto(print)
-      ch << Label(bad) << POP << Ldc("!!! stack too short")
+      ch << Ldc("... undefined operation!") << Goto(print)
+      ch << Label(bad) << POP << Ldc("... stack too short!")
       ch << Label(print)
       ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
       ch << SWAP
