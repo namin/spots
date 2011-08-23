@@ -1,5 +1,6 @@
 object CalcGen {
   val className = "Calc"
+  var errors = 0
 
   import cafebabe._
   import AbstractByteCodes._
@@ -13,6 +14,56 @@ object CalcGen {
 
   case class DefFun(override val name: String, val params: List[String], val source: Any) extends Fun {
     override val numParams = params.size
+
+    def compile(classFile: ClassFile, funmap: Map[String, Fun]): Unit = {
+      println("Compiling " + name)
+
+      val mh = classFile.addMethod("I", name, "I" * numParams)
+      mh.setFlags(Flags.METHOD_ACC_STATIC)
+      val ch = mh.codeHandler
+      val top = "_top_"
+
+      def c(last: Boolean)(code: Any): Unit = {
+	code match {
+	  case n: Int => ch << Ldc(n)
+	  case v: String => params.indexOf(v) match {
+	    case -1 => { errors += 1; println("Error: undefined variable " + v) }
+	    case i => ch << ILoad(i)
+	  }
+	  case List("if", cond, cons, alt) => {
+	    c(false)(cond)
+	    val if_true = ch.getFreshLabel("if_true")
+	    val end = ch.getFreshLabel("end")
+	    ch << IfNe(if_true)
+	    c(last)(alt)
+	    ch << Goto(end)
+	    ch << Label(if_true)
+	    c(last)(cons)
+	    ch << Label(end)
+	  }
+	  case ("if" :: _) => { errors += 1; println("Error: malformed if") }
+	  case ((funName : String) :: args) => funmap.get(funName) match {
+	    case None => { errors += 1; println("Error: unknown function " + funName) }
+	    case Some(fun) => if (args.size != fun.numParams) { errors += 1; println("Error: wrong number of arguments for function " + funName + ". Expected " + fun.numParams + " not " + args.size + ".") } else {
+	      args.foreach(c(false))
+	      if (!last || funName != name) {
+		fun.invoke(ch)		
+	      } else {
+		for (i <- (0 until numParams).reverse)
+		  ch << IStore(i)
+		ch << Goto(top)
+	      }
+	    }
+	  }
+	  case _ => { errors += 1; println("Error: malformed expression") }
+	}
+      }
+      ch << Label(top)
+      c(true)(source)
+      ch << IRETURN
+      if (errors == 0) ch.freeze
+    }
+
     def invoke(ch: CodeHandler): Unit = {
       ch << InvokeStatic(className, name, "(" + "I" * numParams + ")I")
     }
@@ -45,7 +96,7 @@ object CalcGen {
 
   object PrimitiveLt extends PrimitiveCmp("<", 2, If_ICmpLt(_))
 
-  object PrimitiveEq extends PrimitiveCmp("<", 2, If_ICmpEq(_))
+  object PrimitiveEq extends PrimitiveCmp("=", 2, If_ICmpEq(_))
 
   val primitives = List(PrimitiveAdd, PrimitiveSub, PrimitiveMul, PrimitiveLt, PrimitiveEq)
 
@@ -77,13 +128,21 @@ object CalcGen {
     def parseDefinitions(filename: String): List[DefFun] = {
       parseAll(definitions, content(filename)) match {
 	case Success(defs, _) => { println("Parsed " + filename); defs }
-	case e => { println("Error parsing " + filename); println(e); List() }
+	case e => { errors += 1; println("Error parsing " + filename); println(e); List() }
       }
     }
   }
 
   def main(args: Array[String]) {
     val defs = args.flatMap(parser.parseDefinitions(_))
-    println("Done")
+
+    val funmap = Map() ++ ((primitives ++ defs).map(f => (f.name, f)))
+
+    val classFile = new ClassFile(className, None)
+
+    defs.foreach(_.compile(classFile, funmap))
+
+    if (errors > 0) println("There were errors.")
+    else classFile.writeToFile(className + ".class")
   }
 }
