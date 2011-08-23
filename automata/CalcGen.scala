@@ -163,24 +163,26 @@ object CalcGen {
 	ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
 	ch << InvokeVirtual("java/util/Stack", "size", "()I")
 	ch << Ldc(fun.numParams)
-	ch << If_ICmpLt(bad)
-	(0 until fun.numParams).reverse.foreach(i => {
+	ch << ISUB
+	ch << DUP
+	ch << IfLt(bad)
+	val index = ch.getFreshVar
+	ch << IStore(index)
+	(0 until fun.numParams).reverse.foreach(_ => {
 	  ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
-	  ch << DUP
-	  ch << InvokeVirtual("java/util/Stack", "size", "()I")
-	  ch << Ldc(i+1)
-	  ch << ISUB
+	  ch << ILoad(index)
 	  ch << InvokeVirtual("java/util/Stack", "remove", "(I)Ljava/lang/Object;")
 	  ch << CheckCast("java/lang/Integer")
 	  ch << InvokeVirtual("java/lang/Integer", "intValue", "()I")
 	})
+	ch.freeVar(index)
 	fun.invoke(ch)
 	ch << Goto(push)
 	ch << Label(next)
       }
 
       ch << Ldc("!!! undefined operation") << Goto(print)
-      ch << Label(bad) << Ldc("!!! stack too short")
+      ch << Label(bad) << POP << Ldc("!!! stack too short")
       ch << Label(print)
       ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
       ch << SWAP
