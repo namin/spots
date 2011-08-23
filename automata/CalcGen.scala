@@ -115,13 +115,17 @@ object CalcGen {
 
   abstract class PrimitiveCmp(override val name: String, override val numParams: Int, val cmp: (String) => ControlOperator) extends PrimitiveFun(name, numParams) {
     override def invoke(ch: CodeHandler): Unit = {
-      ch << InvokeVirtual(intClass, "compareTo", "(" + intType + ")I")
       val if_true = ch.getFreshLabel("if_true")
       val end = ch.getFreshLabel("end")
-      ch << cmp(if_true)
+      invokeForIf(ch, if_true)
       ch << GetStatic(intClass, "ZERO", intType) << Goto(end)
       ch << Label(if_true) << GetStatic(intClass, "ONE", intType)
       ch << Label(end)
+    }
+
+    override def invokeForIf(ch: CodeHandler, if_true: String): Unit = {
+      ch << InvokeVirtual(intClass, "compareTo", "(" + intType + ")I")
+      ch << cmp(if_true)
     }
   }
 
