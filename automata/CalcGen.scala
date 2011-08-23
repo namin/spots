@@ -1,4 +1,5 @@
 object CalcGen {
+  val baseClassName = "CalcBase"
   val className = "Calc"
   var errors = 0
 
@@ -133,16 +134,83 @@ object CalcGen {
     }
   }
 
+  def compile(classFile: ClassFile, funmap: Map[String, Fun]): Unit = {
+    classFile.addDefaultConstructor
+
+    def compileMain(): Unit = {
+      val ch = classFile.addMainMethod.codeHandler
+      ch << DefaultNew(className)
+      ch << InvokeVirtual(className, "readEvalLoop", "()V");
+      ch << RETURN
+      ch.freeze
+    }
+    compileMain()
+
+    def compileDispatch(): Unit = {
+      val ch = classFile.addMethod("Z", "dispatch", "Ljava/lang/String;").codeHandler
+
+      val bad = "_bad_"
+      val print = "_print_"
+      val push = "_push_"
+      val input = 1
+
+      for (fun <- funmap.values) {
+	val next = ch.getFreshLabel("next")
+	ch << ALoad(input)
+	ch << Ldc(fun.name)
+	ch << InvokeVirtual("java/lang/String", "equals", "(Ljava/lang/Object;)Z")
+	ch << IfEq(next)
+	ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
+	ch << InvokeVirtual("java/util/Stack", "size", "()I")
+	ch << Ldc(fun.numParams)
+	ch << If_ICmpLt(bad)
+	(0 until fun.numParams).reverse.foreach(i => {
+	  ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
+	  ch << DUP
+	  ch << InvokeVirtual("java/util/Stack", "size", "()I")
+	  ch << Ldc(i+1)
+	  ch << ISUB
+	  ch << InvokeVirtual("java/util/Stack", "remove", "(I)Ljava/lang/Object;")
+	  ch << CheckCast("java/lang/Integer")
+	  ch << InvokeVirtual("java/lang/Integer", "intValue", "()I")
+	})
+	fun.invoke(ch)
+	ch << Goto(push)
+	ch << Label(next)
+      }
+
+      ch << Ldc("!!! undefined operation") << Goto(print)
+      ch << Label(bad) << Ldc("!!! stack too short")
+      ch << Label(print)
+      ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
+      ch << SWAP
+      ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
+      ch << Ldc(0) << IRETURN
+      ch << Label(push)
+      ch << InvokeStatic("java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;")
+      ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
+      ch << SWAP
+      ch << InvokeVirtual("java/util/Stack", "addElement", "(Ljava/lang/Object;)V")
+      ch << Ldc(1) << IRETURN
+
+      ch.freeze
+    }
+    compileDispatch()
+  }
+
   def main(args: Array[String]) {
     val defs = args.flatMap(parser.parseDefinitions(_))
 
     val funmap = Map() ++ ((primitives ++ defs).map(f => (f.name, f)))
 
-    val classFile = new ClassFile(className, None)
+    val classFile = new ClassFile(className, Some(baseClassName))
 
     defs.foreach(_.compile(classFile, funmap))
 
-    if (errors > 0) println("There were errors.")
-    else classFile.writeToFile(className + ".class")
+    if (errors > 0) println("There were errors.") else {
+      compile(classFile, funmap)
+      classFile.writeToFile(className + ".class")
+      println("Done")
+    }
   }
 }
