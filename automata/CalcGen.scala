@@ -10,10 +10,20 @@ object CalcGen {
   import AbstractByteCodes._ // augmented with CheckCast, JustNew
   import ByteCodes._
 
+  def startIf(ch: CodeHandler, if_true: String): Unit = {
+    ch << GetStatic(intClass, "ZERO", intType)
+    ch << InvokeVirtual(intClass, "equals", "(Ljava/lang/Object;)Z")
+    ch << IfEq(if_true)
+  }
+
   abstract class Fun {
     val name: String
     val numParams: Int
     def invoke(ch: CodeHandler): Unit
+    def invokeForIf(ch: CodeHandler, if_true: String): Unit = {
+      invoke(ch)
+      startIf(ch, if_true)
+    }
   }
 
   case class I(val n: String)
@@ -29,37 +39,42 @@ object CalcGen {
       val ch = mh.codeHandler
       val top = "_top_"
 
-      def c(last: Boolean)(code: Any): Unit = {
+      def c(last: Boolean, forIf: Option[String])(code: Any): Unit = {
 	code match {
 	  case I(n) => {
 	    ch << JustNew(intClass)
 	    ch << Ldc(n)
 	    ch << InvokeSpecial(intClass, "<init>", "(Ljava/lang/String;)V")
+	    forIf.foreach(startIf(ch, _))
 	  }
 	  case v: String => params.indexOf(v) match {
 	    case -1 => { errors += 1; println("Error: undefined variable " + v) }
-	    case i => ch << ALoad(i)
+	    case i => {
+	      ch << ALoad(i)
+	      forIf.foreach(startIf(ch, _))
+	    }
 	  }
 	  case List("if", cond, cons, alt) => {
-	    c(false)(cond)
 	    val if_true = ch.getFreshLabel("if_true")
+	    c(false, Some(if_true))(cond)
 	    val end = ch.getFreshLabel("end")
-	    ch << GetStatic(intClass, "ZERO", intType)
-	    ch << InvokeVirtual(intClass, "equals", "(Ljava/lang/Object;)Z")
-	    ch << IfEq(if_true)
-	    c(last)(alt)
+	    c(last, None)(alt)
 	    ch << Goto(end)
 	    ch << Label(if_true)
-	    c(last)(cons)
+	    c(last, None)(cons)
 	    ch << Label(end)
+	    forIf.foreach(startIf(ch, _))
 	  }
 	  case ("if" :: _) => { errors += 1; println("Error: malformed if") }
 	  case ((funName : String) :: args) => funmap.get(funName) match {
 	    case None => { errors += 1; println("Error: unknown function " + funName) }
 	    case Some(fun) => if (args.size != fun.numParams) { errors += 1; println("Error: wrong number of arguments for function " + funName + ". Expected " + fun.numParams + " not " + args.size + ".") } else {
-	      args.foreach(c(false))
+	      args.foreach(c(false, None))
 	      if (!last || funName != name) {
-		fun.invoke(ch)		
+		forIf match {
+		  case None => fun.invoke(ch)
+		  case Some(if_true) => fun.invokeForIf(ch, if_true)
+		}
 	      } else {
 		for (i <- (0 until numParams).reverse)
 		  ch << AStore(i)
@@ -71,7 +86,7 @@ object CalcGen {
 	}
       }
       ch << Label(top)
-      c(true)(source)
+      c(true, None)(source)
       ch << ARETURN
       if (errors == 0) ch.freeze
     }
