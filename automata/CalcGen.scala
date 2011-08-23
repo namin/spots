@@ -58,12 +58,11 @@ object CalcGen {
 	    val if_true = ch.getFreshLabel("if_true")
 	    c(false, Some(if_true))(cond)
 	    val end = ch.getFreshLabel("end")
-	    c(last, None)(alt)
+	    c(last, forIf)(alt)
 	    ch << Goto(end)
 	    ch << Label(if_true)
-	    c(last, None)(cons)
+	    c(last, forIf)(cons)
 	    ch << Label(end)
-	    forIf.foreach(startIf(ch, _))
 	  }
 	  case ("if" :: _) => { errors += 1; println("Error: malformed if") }
 	  case ((funName : String) :: args) => funmap.get(funName) match {
