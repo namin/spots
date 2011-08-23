@@ -7,7 +7,7 @@ object CalcGen {
   val intType = "L" + intClass + ";"
 
   import cafebabe._
-  import AbstractByteCodes._
+  import AbstractByteCodes._ // augmented with JustNew and CheckCast
   import ByteCodes._
 
   abstract class Fun {
