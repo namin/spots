@@ -201,7 +201,7 @@ object CalcGen {
 	ch << IfLt(bad)
 	val index = ch.getFreshVar
 	ch << IStore(index)
-	(0 until fun.numParams).reverse.foreach(_ => {
+	(0 until fun.numParams).foreach(_ => {
 	  ch << ALoad(0) << GetField(className, "stack", "Ljava/util/Stack;")
 	  ch << ILoad(index)
 	  ch << InvokeVirtual("java/util/Stack", "remove", "(I)Ljava/lang/Object;")
