@@ -11,6 +11,9 @@ case class App(f: Term, e: Term) extends Term {
 case class Let(x: String, e: Term, f: Term) extends Term {
   override def toString = "let " + x + " = " + e + " in " + f
 }
+case class Letrec(x: String, e: Term, f: Term) extends Term {
+  override def toString = "letrec " + x + " = " + e + " in " + f
+}
 
 sealed abstract class Type {}
 case class Tyvar(a: String) extends Type {
@@ -75,8 +78,8 @@ object typeInfer {
   def mgu(t: Type, u: Type, s: Subst): Subst = (s(t), s(u)) match {
     case (Tyvar(a), Tyvar(b)) if (a == b) =>
       s
-    case (Tyvar(a), _) if !(tyvars(u) contains a) =>
-      s.extend(Tyvar(a), u)
+    case (st @ Tyvar(a), su) if !(tyvars(su) contains st) =>
+      s.extend(st, su)
     case (_, Tyvar(a)) =>
       mgu(u, t, s)
     case (Arrow(t1, t2), Arrow(u1, u2)) =>
@@ -109,6 +112,11 @@ object typeInfer {
 	val a = newTyvar()
         val s1 = tp(env, e1, a, s)
         tp((x, gen(env, s1(a))) :: env, e2, t, s1)
+      case Letrec(x, e1, e2) =>
+	val a, b = newTyvar()
+        val s1 = tp((x, TypeScheme(List(), a)) :: env, e1, b, s)
+        val s2 = mgu(a, b, s1)
+        tp((x, gen(env, s2(a))) :: env, e2, t, s2)
     }
   }
   var current: Term = null
