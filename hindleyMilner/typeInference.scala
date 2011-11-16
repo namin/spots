@@ -38,6 +38,10 @@ object typeInfer {
       case Arrow(t1, t2) => Arrow(apply(t1), apply(t2))
       case Tycon(k, ts) => Tycon(k, ts map apply)
     }
+    def apply(env: Env): Env = env.map({ case (x, TypeScheme(tyvars, tpe)) =>
+      // assumes tyvars don't occur in this substitution
+      (x, TypeScheme(tyvars, apply(tpe)))
+    })
     def extend(x: Tyvar, t: Type) = new Subst {
       def lookup(y: Tyvar): Type = if (x == y) t else Subst.this.lookup(y)
     }
@@ -111,12 +115,12 @@ object typeInfer {
       case Let(x, e1, e2) =>
 	val a = newTyvar()
         val s1 = tp(env, e1, a, s)
-        tp((x, gen(env, s1(a))) :: env, e2, t, s1)
+        tp((x, gen(s1(env), s1(a))) :: env, e2, t, s1)
       case Letrec(x, e1, e2) =>
 	val a, b = newTyvar()
         val s1 = tp((x, TypeScheme(List(), a)) :: env, e1, b, s)
         val s2 = mgu(a, b, s1)
-        tp((x, gen(env, s2(a))) :: env, e2, t, s2)
+        tp((x, gen(s2(env), s2(a))) :: env, e2, t, s2)
     }
   }
   var current: Term = null
