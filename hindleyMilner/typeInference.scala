@@ -1,3 +1,5 @@
+// Hindler-Milner Type Inference from Scala by Example, ch. 16
+
 abstract class Term {}
 case class Var(x: String) extends Term {
   override def toString = x
